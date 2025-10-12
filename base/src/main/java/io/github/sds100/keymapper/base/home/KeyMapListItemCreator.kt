@@ -21,6 +21,7 @@ import io.github.sds100.keymapper.base.trigger.FloatingButtonKey
 import io.github.sds100.keymapper.base.trigger.KeyEventTriggerDevice
 import io.github.sds100.keymapper.base.trigger.KeyEventTriggerKey
 import io.github.sds100.keymapper.base.trigger.KeyMapListItemModel
+import io.github.sds100.keymapper.base.trigger.MqttTriggerKey
 import io.github.sds100.keymapper.base.trigger.Trigger
 import io.github.sds100.keymapper.base.trigger.TriggerErrorSnapshot
 import io.github.sds100.keymapper.base.trigger.TriggerMode
@@ -68,6 +69,7 @@ class KeyMapListItemCreator(
                 is FloatingButtonKey -> floatingButtonKeyName(key)
                 is FingerprintTriggerKey -> fingerprintKeyName(key)
                 is EvdevTriggerKey -> evdevTriggerKeyName(key)
+                is MqttTriggerKey -> mqttTriggerKeyName(key)
             }
         }
 
@@ -348,6 +350,21 @@ class KeyMapListItemCreator(
             FingerprintGestureType.SWIPE_UP -> append(getString(R.string.trigger_key_fingerprint_gesture_up))
             FingerprintGestureType.SWIPE_LEFT -> append(getString(R.string.trigger_key_fingerprint_gesture_left))
             FingerprintGestureType.SWIPE_RIGHT -> append(getString(R.string.trigger_key_fingerprint_gesture_right))
+        }
+    }
+
+    private fun mqttTriggerKeyName(key: MqttTriggerKey): String = buildString {
+        when (key.clickType) {
+            ClickType.DOUBLE_PRESS -> append(doublePressString).append(" ")
+            ClickType.LONG_PRESS -> append(longPressString).append(" ")
+            else -> Unit
+        }
+
+        append("MQTT: ")
+        append(key.topic)
+        if (key.messagePattern.isNotEmpty()) {
+            append(" / ")
+            append(key.messagePattern)
         }
     }
 

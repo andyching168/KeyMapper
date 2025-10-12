@@ -15,6 +15,8 @@ import io.github.sds100.keymapper.common.utils.KMError
 import io.github.sds100.keymapper.common.utils.KMResult
 import io.github.sds100.keymapper.common.utils.onFailure
 import io.github.sds100.keymapper.common.utils.onSuccess
+import io.github.sds100.keymapper.data.Keys
+import io.github.sds100.keymapper.data.repositories.PreferenceRepository
 import io.github.sds100.keymapper.sysbridge.manager.SystemBridgeConnectionManager
 import io.github.sds100.keymapper.sysbridge.manager.SystemBridgeConnectionState
 import io.github.sds100.keymapper.system.accessibility.AccessibilityServiceState
@@ -46,6 +48,7 @@ class TriggerSetupDelegateImpl @Inject constructor(
     val systemBridgeConnectionManager: SystemBridgeConnectionManager,
     val configTriggerUseCase: ConfigTriggerUseCase,
     val setupInputMethodUseCase: SetupInputMethodUseCase,
+    val preferenceRepository: PreferenceRepository,
     resourceProvider: ResourceProvider,
     dialogProvider: DialogProvider,
     navigationProvider: NavigationProvider,
@@ -63,6 +66,15 @@ class TriggerSetupDelegateImpl @Inject constructor(
 
     private val selectedGamePadType: MutableStateFlow<TriggerSetupState.Gamepad.Type> =
         MutableStateFlow(TriggerSetupState.Gamepad.Type.DPAD)
+
+    // MQTT state
+    private val mqttBrokerAddress: MutableStateFlow<String> = MutableStateFlow("")
+    private val mqttBrokerPort: MutableStateFlow<Int> = MutableStateFlow(1883)
+    private val mqttUsername: MutableStateFlow<String> = MutableStateFlow("")
+    private val mqttPassword: MutableStateFlow<String> = MutableStateFlow("")
+    private val mqttTopic: MutableStateFlow<String> = MutableStateFlow("")
+    private val mqttMessagePattern: MutableStateFlow<String> = MutableStateFlow("")
+    private val mqttMatchType: MutableStateFlow<MqttMatchType> = MutableStateFlow(MqttMatchType.EXACT)
 
     private val proModeStatus: Flow<ProModeStatus> =
         if (Build.VERSION.SDK_INT >= Constants.SYSTEM_BRIDGE_MIN_API) {
@@ -90,6 +102,7 @@ class TriggerSetupDelegateImpl @Inject constructor(
                     TriggerSetupShortcut.GAMEPAD -> buildSetupGamepadTriggerFlow()
                     TriggerSetupShortcut.OTHER -> buildSetupOtherTriggerFlow()
                     TriggerSetupShortcut.NOT_DETECTED -> buildSetupNotDetectedFlow()
+                    TriggerSetupShortcut.MQTT -> buildSetupMqttTriggerFlow()
 
                     else -> throw UnsupportedOperationException("Unhandled shortcut: $shortcut")
                 }
@@ -98,6 +111,41 @@ class TriggerSetupDelegateImpl @Inject constructor(
 
     override fun showTriggerSetup(shortcut: TriggerSetupShortcut) {
         currentSetupShortcut.value = shortcut
+        
+        // Load saved MQTT broker settings when showing MQTT setup
+        if (shortcut == TriggerSetupShortcut.MQTT) {
+            viewModelScope.launch {
+                // Load broker address
+                preferenceRepository.get(Keys.mqttBrokerUrl).firstOrNull()?.let { savedBrokerUrl ->
+                    if (savedBrokerUrl.isNotBlank()) {
+                        mqttBrokerAddress.value = savedBrokerUrl
+                    }
+                }
+                
+                // Load broker port
+                preferenceRepository.get(Keys.mqttBrokerPort).firstOrNull()?.let { savedPort ->
+                    savedPort.toIntOrNull()?.let { port ->
+                        mqttBrokerPort.value = port
+                    }
+                }
+                
+                // Load username
+                preferenceRepository.get(Keys.mqttUsername).firstOrNull()?.let { savedUsername ->
+                    if (savedUsername.isNotBlank()) {
+                        mqttUsername.value = savedUsername
+                    }
+                }
+                
+                // Load password
+                preferenceRepository.get(Keys.mqttPassword).firstOrNull()?.let { savedPassword ->
+                    if (savedPassword.isNotBlank()) {
+                        mqttPassword.value = savedPassword
+                    }
+                }
+                
+                Timber.d("MQTT: Loaded saved broker settings - broker=${mqttBrokerAddress.value}:${mqttBrokerPort.value}, username=${mqttUsername.value}")
+            }
+        }
     }
 
     private fun buildSetupVolumeTriggerFlow(): Flow<TriggerSetupState> {
@@ -252,6 +300,35 @@ class TriggerSetupDelegateImpl @Inject constructor(
         }
     }
 
+    private fun buildSetupMqttTriggerFlow(): Flow<TriggerSetupState> {
+        return mqttBrokerAddress.flatMapLatest { brokerAddress ->
+            mqttBrokerPort.flatMapLatest { brokerPort ->
+                mqttUsername.flatMapLatest { username ->
+                    mqttPassword.flatMapLatest { password ->
+                        mqttTopic.flatMapLatest { topic ->
+                            mqttMessagePattern.flatMapLatest { messagePattern ->
+                                mqttMatchType.map { matchType ->
+                                    val areRequirementsMet = brokerAddress.isNotBlank() && topic.isNotBlank()
+
+                                    TriggerSetupState.Mqtt(
+                                        brokerAddress = brokerAddress,
+                                        brokerPort = brokerPort,
+                                        username = username,
+                                        password = password,
+                                        topic = topic,
+                                        messagePattern = messagePattern,
+                                        matchType = matchType,
+                                        areRequirementsMet = areRequirementsMet,
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     private fun buildSetupPowerTriggerFlow(): Flow<TriggerSetupState> {
         return combine(
             controlAccessibilityServiceUseCase.serviceState,
@@ -341,6 +418,14 @@ class TriggerSetupDelegateImpl @Inject constructor(
     }
 
     override fun onDismissTriggerSetup() {
+        // Reset MQTT topic and message pattern when closing the setup
+        // (Keep broker settings for reuse)
+        if (currentSetupShortcut.value == TriggerSetupShortcut.MQTT) {
+            mqttTopic.value = ""
+            mqttMessagePattern.value = ""
+            mqttMatchType.value = MqttMatchType.ANY
+        }
+        
         currentSetupShortcut.value = null
     }
 
@@ -356,6 +441,7 @@ class TriggerSetupDelegateImpl @Inject constructor(
             is TriggerSetupState.Other -> setupState.isScreenOffChecked
             is TriggerSetupState.Gamepad.Dpad -> false
             is TriggerSetupState.Gamepad.SimpleButtons -> setupState.isScreenOffChecked
+            is TriggerSetupState.Mqtt -> false
             // Always enable pro mode recording to increase the chances of detecting
             // the key
             is TriggerSetupState.NotDetected -> true
@@ -412,6 +498,61 @@ class TriggerSetupDelegateImpl @Inject constructor(
         }
     }
 
+    override fun onMqttBrokerAddressChanged(address: String) {
+        mqttBrokerAddress.value = address
+    }
+
+    override fun onMqttBrokerPortChanged(port: Int) {
+        mqttBrokerPort.value = port
+    }
+
+    override fun onMqttUsernameChanged(username: String) {
+        mqttUsername.value = username
+    }
+
+    override fun onMqttPasswordChanged(password: String) {
+        mqttPassword.value = password
+    }
+
+    override fun onMqttTopicChanged(topic: String) {
+        mqttTopic.value = topic
+    }
+
+    override fun onMqttMessagePatternChanged(pattern: String) {
+        mqttMessagePattern.value = pattern
+    }
+
+    override fun onMqttMatchTypeChanged(matchType: MqttMatchType) {
+        mqttMatchType.value = matchType
+    }
+
+    override fun onAddMqttTriggerClick() {
+        val state = triggerSetupState.value as? TriggerSetupState.Mqtt ?: return
+        
+        // Save MQTT broker settings to preferences
+        viewModelScope.launch {
+            preferenceRepository.set(Keys.mqttBrokerUrl, state.brokerAddress)
+            preferenceRepository.set(Keys.mqttBrokerPort, state.brokerPort.toString())
+            
+            if (state.username.isNotBlank()) {
+                preferenceRepository.set(Keys.mqttUsername, state.username)
+            }
+            
+            if (state.password.isNotBlank()) {
+                preferenceRepository.set(Keys.mqttPassword, state.password)
+            }
+            
+            Timber.d("MQTT: Saved broker settings - broker=${state.brokerAddress}:${state.brokerPort}, username=${state.username}")
+        }
+        
+        configTriggerUseCase.addMqttTriggerKey(
+            topic = state.topic,
+            messagePattern = state.messagePattern,
+            matchType = state.matchType,
+        )
+        currentSetupShortcut.value = null
+    }
+
     private suspend fun handleServiceEventResult(result: KMResult<*>) {
         if (result is KMError.AccessibilityServiceDisabled) {
             ViewModelHelper.handleAccessibilityServiceStoppedDialog(
@@ -444,4 +585,12 @@ interface TriggerSetupDelegate {
     fun onGamepadButtonTypeSelected(type: TriggerSetupState.Gamepad.Type)
     fun onEnableImeClick()
     fun onChooseImeClick()
+    fun onMqttBrokerAddressChanged(address: String)
+    fun onMqttBrokerPortChanged(port: Int)
+    fun onMqttUsernameChanged(username: String)
+    fun onMqttPasswordChanged(password: String)
+    fun onMqttTopicChanged(topic: String)
+    fun onMqttMessagePatternChanged(pattern: String)
+    fun onMqttMatchTypeChanged(matchType: MqttMatchType)
+    fun onAddMqttTriggerClick()
 }

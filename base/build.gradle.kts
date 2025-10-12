@@ -92,6 +92,7 @@ dependencies {
     implementation(libs.anggrayudi.storage)
     implementation(libs.google.flexbox)
     implementation(libs.squareup.okhttp)
+    implementation(libs.hivemq.mqtt.client)
     coreLibraryDesugaring(libs.desugar.jdk.libs)
     implementation(libs.canopas.introshowcaseview)
     implementation(libs.dagger.hilt.android)

@@ -16,6 +16,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.VolumeUp
 import androidx.compose.material.icons.filled.PhoneAndroid
 import androidx.compose.material.icons.outlined.BubbleChart
+import androidx.compose.material.icons.outlined.Cloud
 import androidx.compose.material.icons.outlined.Keyboard
 import androidx.compose.material.icons.outlined.Mouse
 import androidx.compose.material.icons.rounded.Fingerprint
@@ -136,6 +137,18 @@ fun TriggerDiscoverScreen(
                     TriggerSetupShortcut.OTHER,
                     stringResource(R.string.trigger_discover_shortcut_other),
                     KeyMapperIcons.IndeterminateQuestionBox,
+                ),
+            ),
+            onShortcutClick = onShortcutClick,
+        )
+
+        TriggerSection(
+            title = stringResource(R.string.trigger_discover_section_network),
+            shortcuts = listOf(
+                ShortcutData(
+                    TriggerSetupShortcut.MQTT,
+                    stringResource(R.string.trigger_discover_shortcut_mqtt),
+                    Icons.Outlined.Cloud,
                 ),
             ),
             onShortcutClick = onShortcutClick,

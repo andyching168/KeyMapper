@@ -21,12 +21,15 @@ import io.github.sds100.keymapper.base.trigger.FloatingButtonKey
 import io.github.sds100.keymapper.base.trigger.KeyCodeTriggerKey
 import io.github.sds100.keymapper.base.trigger.KeyEventTriggerDevice
 import io.github.sds100.keymapper.base.trigger.KeyEventTriggerKey
+import io.github.sds100.keymapper.base.trigger.MqttMatchType
+import io.github.sds100.keymapper.base.trigger.MqttTriggerKey
 import io.github.sds100.keymapper.base.trigger.Trigger
 import io.github.sds100.keymapper.base.trigger.TriggerKey
 import io.github.sds100.keymapper.base.trigger.TriggerMode
 import io.github.sds100.keymapper.base.trigger.detectWithScancode
 import io.github.sds100.keymapper.common.models.EvdevDeviceInfo
 import io.github.sds100.keymapper.common.utils.minusFlag
+import timber.log.Timber
 import io.github.sds100.keymapper.common.utils.withFlag
 import io.github.sds100.keymapper.data.PreferenceDefaults
 import io.github.sds100.keymapper.system.inputevents.KMEvdevEvent
@@ -1544,6 +1547,15 @@ class KeyMapAlgorithm(
         onKeyUp(event)
     }
 
+    fun onMqttMessage(topic: String, message: String) {
+        Timber.d("MQTT Algorithm: Received message - topic=$topic, message=$message")
+        val event = MqttMessageEvent(topic, message, clickType = null)
+        Timber.d("MQTT Algorithm: Created event - $event")
+        onKeyDown(event)
+        onKeyUp(event)
+        Timber.d("MQTT Algorithm: Finished processing")
+    }
+
     fun onFloatingButtonDown(buttonUid: String) {
         val event = FloatingButtonEvent(buttonUid, clickType = null)
         onKeyDown(event)
@@ -1772,6 +1784,27 @@ class KeyMapAlgorithm(
             return this.type == event.type && this.clickType == event.clickType
         } else if (this is FloatingButtonKey && event is FloatingButtonEvent) {
             return this.buttonUid == event.buttonUid && this.clickType == event.clickType
+        } else if (this is MqttTriggerKey && event is MqttMessageEvent) {
+            val topicMatches = this.topic == event.topic
+            val messageMatches = when (this.matchType) {
+                MqttMatchType.EXACT -> this.messagePattern == event.message
+                MqttMatchType.CONTAINS -> event.message.contains(this.messagePattern)
+                MqttMatchType.REGEX -> {
+                    try {
+                        this.messagePattern.toRegex().matches(event.message)
+                    } catch (e: Exception) {
+                        false
+                    }
+                }
+                MqttMatchType.ANY -> true
+            }
+            val clickTypeMatches = this.clickType == event.clickType
+            val result = topicMatches && messageMatches && clickTypeMatches
+            Timber.d("MQTT Match Check: trigger.topic=${this.topic}, event.topic=${event.topic}, topicMatches=$topicMatches")
+            Timber.d("MQTT Match Check: trigger.pattern=${this.messagePattern}, event.msg=${event.message}, matchType=${this.matchType}, messageMatches=$messageMatches")
+            Timber.d("MQTT Match Check: trigger.clickType=${this.clickType}, event.clickType=${event.clickType}, clickTypeMatches=$clickTypeMatches")
+            Timber.d("MQTT Match Check: FINAL RESULT=$result")
+            return result
         } else {
             return false
         }
@@ -1814,6 +1847,11 @@ class KeyMapAlgorithm(
             return this.buttonUid == otherKey.buttonUid && this.clickType == otherKey.clickType
         } else if (this is FingerprintTriggerKey && otherKey is FingerprintTriggerKey) {
             return this.type == otherKey.type && this.clickType == otherKey.clickType
+        } else if (this is MqttTriggerKey && otherKey is MqttTriggerKey) {
+            return this.topic == otherKey.topic &&
+                this.messagePattern == otherKey.messagePattern &&
+                this.matchType == otherKey.matchType &&
+                this.clickType == otherKey.clickType
         } else {
             return false
         }
@@ -1879,6 +1917,7 @@ class KeyMapAlgorithm(
                 is FingerprintTriggerKey -> true
                 is FloatingButtonKey -> true
                 is KeyEventTriggerKey -> consumeEvent
+                is MqttTriggerKey -> true
             }
         }
 
@@ -1894,6 +1933,7 @@ class KeyMapAlgorithm(
             is AssistantEvent -> this.copy(clickType = clickType)
             is FloatingButtonEvent -> this.copy(clickType = clickType)
             is FingerprintGestureEvent -> this.copy(clickType = clickType)
+            is MqttMessageEvent -> this.copy(clickType = clickType)
         }
     }
 
@@ -1928,6 +1968,12 @@ class KeyMapAlgorithm(
 
     private data class FloatingButtonEvent(
         val buttonUid: String,
+        override val clickType: ClickType?,
+    ) : AlgoEvent()
+
+    private data class MqttMessageEvent(
+        val topic: String,
+        val message: String,
         override val clickType: ClickType?,
     ) : AlgoEvent()
 

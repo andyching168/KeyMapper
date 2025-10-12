@@ -19,6 +19,7 @@ dependencyResolutionManagement {
         maven { url = uri("https://jitpack.io") }
         maven { url = uri("https://maven.google.com/") }
         maven { url = uri("https://dl.bintray.com/rikkaw/Shizuku") }
+        maven { url = uri("https://repo.eclipse.org/content/repositories/paho-releases/") }
     }
 }
 

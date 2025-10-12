@@ -309,6 +309,16 @@ abstract class BaseConfigTriggerViewModel(
                             isScanCodeSettingEnabled = key.isScanCodeDetectionUserConfigurable(),
                         )
                     }
+
+                    is MqttTriggerKey -> {
+                        return TriggerKeyOptionsState.Mqtt(
+                            topic = key.topic,
+                            messagePattern = key.messagePattern,
+                            matchType = key.matchType,
+                            clickType = key.clickType,
+                            showClickTypes = showClickTypes,
+                        )
+                    }
                 }
             }
         }
@@ -592,6 +602,16 @@ abstract class BaseConfigTriggerViewModel(
                     linkType = linkType,
                     error = error,
                 )
+
+                is MqttTriggerKey -> TriggerKeyListItemModel.Mqtt(
+                    id = key.uid,
+                    topic = key.topic,
+                    messagePattern = key.messagePattern,
+                    matchType = key.matchType,
+                    clickType = clickType,
+                    linkType = linkType,
+                    error = error,
+                )
             }
         }
     }
@@ -722,6 +742,16 @@ sealed class TriggerKeyListItemModel {
         override val error: TriggerError =
             TriggerError.FLOATING_BUTTON_DELETED
     }
+
+    data class Mqtt(
+        override val id: String,
+        override val linkType: LinkType,
+        val topic: String,
+        val messagePattern: String,
+        val matchType: MqttMatchType,
+        override val clickType: ClickType,
+        override val error: TriggerError?,
+    ) : TriggerKeyListItemModel()
 }
 
 sealed class TriggerKeyOptionsState {
@@ -778,6 +808,16 @@ sealed class TriggerKeyOptionsState {
         override val clickType: ClickType,
         override val showClickTypes: Boolean,
         val isPurchased: Boolean,
+    ) : TriggerKeyOptionsState() {
+        override val showLongPressClickType: Boolean = true
+    }
+
+    data class Mqtt(
+        val topic: String,
+        val messagePattern: String,
+        val matchType: MqttMatchType,
+        override val clickType: ClickType,
+        override val showClickTypes: Boolean,
     ) : TriggerKeyOptionsState() {
         override val showLongPressClickType: Boolean = true
     }

@@ -123,6 +123,14 @@ android {
             // can access them. Start in Android 6.0, they are no longer extracted by default.
             useLegacyPackaging = true
         }
+        
+        resources {
+            // Exclude duplicate META-INF files from Netty (used by HiveMQ MQTT Client)
+            excludes += setOf(
+                "META-INF/INDEX.LIST",
+                "META-INF/io.netty.versions.properties"
+            )
+        }
     }
 
     sourceSets {

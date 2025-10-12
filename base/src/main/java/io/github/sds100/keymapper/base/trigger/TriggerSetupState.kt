@@ -83,4 +83,15 @@ sealed class TriggerSetupState {
         val areRequirementsMet: Boolean,
         val selectedType: FingerprintGestureType,
     ) : TriggerSetupState()
+
+    data class Mqtt(
+        val brokerAddress: String,
+        val brokerPort: Int,
+        val username: String,
+        val password: String,
+        val topic: String,
+        val messagePattern: String,
+        val matchType: MqttMatchType,
+        val areRequirementsMet: Boolean,
+    ) : TriggerSetupState()
 }

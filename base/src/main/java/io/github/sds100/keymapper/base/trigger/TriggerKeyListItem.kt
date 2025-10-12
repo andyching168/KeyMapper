@@ -151,6 +151,15 @@ fun TriggerKeyListItem(
                         FingerprintGestureType.SWIPE_LEFT -> stringResource(R.string.trigger_key_fingerprint_gesture_left)
                         FingerprintGestureType.SWIPE_RIGHT -> stringResource(R.string.trigger_key_fingerprint_gesture_right)
                     }
+
+                    is TriggerKeyListItemModel.Mqtt -> buildString {
+                        append("MQTT: ")
+                        append(model.topic)
+                        if (model.messagePattern.isNotEmpty()) {
+                            append(" / ")
+                            append(model.messagePattern)
+                        }
+                    }
                 }
 
                 Spacer(Modifier.width(8.dp))

@@ -22,6 +22,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.outlined.Android
 import androidx.compose.material.icons.outlined.BugReport
+import androidx.compose.material.icons.outlined.Cloud
 import androidx.compose.material.icons.outlined.FindInPage
 import androidx.compose.material.icons.outlined.Gamepad
 import androidx.compose.material.icons.rounded.Code
@@ -176,6 +177,7 @@ fun SettingsScreen(modifier: Modifier = Modifier, viewModel: SettingsViewModel) 
             },
             onShareLogcatClick = viewModel::onShareLogcatClick,
             onKeyEventActionMethodSelected = viewModel::onKeyEventActionMethodSelected,
+            onMqttSettingsClick = viewModel::onMqttSettingsClick,
         )
     }
 }
@@ -252,6 +254,7 @@ private fun Content(
     onHideHomeScreenAlertsToggled: (Boolean) -> Unit = { },
     onShowDeviceDescriptorsToggled: (Boolean) -> Unit = { },
     onKeyEventActionMethodSelected: (isProModeSelected: Boolean) -> Unit = {},
+    onMqttSettingsClick: () -> Unit = {},
 ) {
     Column(
         modifier
@@ -327,6 +330,13 @@ private fun Content(
             icon = Icons.Rounded.Devices,
             isChecked = state.showDeviceDescriptors,
             onCheckedChange = onShowDeviceDescriptorsToggled,
+        )
+
+        OptionPageButton(
+            title = stringResource(R.string.settings_mqtt_title),
+            text = stringResource(R.string.settings_mqtt_summary),
+            icon = Icons.Outlined.Cloud,
+            onClick = onMqttSettingsClick,
         )
 
         OptionsHeaderRow(

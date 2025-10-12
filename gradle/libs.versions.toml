@@ -78,6 +78,7 @@ ui-tooling = "1.8.1" # android.arch.persistence.room:testing
 
 libsu-core = "6.0.0"
 rikka-hidden = "4.3.3"
+eclipse-paho-mqtt = "1.2.5"
 
 [libraries]
 # Kotlin
@@ -189,6 +190,8 @@ vvb2060-ndk-boringssl = { group = "io.github.vvb2060.ndk", name = "boringssl", v
 bouncycastle-bcpkix = { group = "org.bouncycastle", name = "bcpkix-jdk15on", version.ref = "bouncycastle-bcpkix" }
 zhanghai-appiconloader = { group = "me.zhanghai.android.appiconloader", name = "appiconloader", version.ref = "appiconloader" }
 rikka-rikkax-core = { group = "dev.rikka.rikkax.core", name = "core-ktx", version.ref = "rikkax-core" }
+hivemq-mqtt-client = { group = "com.hivemq", name = "hivemq-mqtt-client", version = "1.3.3" }
+
 
 
 # Gradle Plugins - Aliases for buildscript dependencies / plugins block

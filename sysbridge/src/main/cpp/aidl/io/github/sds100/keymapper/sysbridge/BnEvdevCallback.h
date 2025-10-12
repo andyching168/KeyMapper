@@ -1,6 +1,6 @@
 /*
  * This file is auto-generated.  DO NOT MODIFY.
- * Using: /Users/sethd/Library/Android/sdk/build-tools/35.0.0/aidl --lang=ndk -o /Users/sethd/Projects/KeyMapper/foss/sysbridge/src/main/cpp/aidl -h /Users/sethd/Projects/KeyMapper/foss/sysbridge/src/main/cpp -I /Users/sethd/Projects/KeyMapper/foss/sysbridge/src/main/aidl /Users/sethd/Projects/KeyMapper/foss/sysbridge/src/main/aidl/io/github/sds100/keymapper/sysbridge/IEvdevCallback.aidl
+ * Using: /home/AC/Android/Sdk/build-tools/35.0.0/aidl --lang=ndk -o /home/AC/AndroidStudioProjects/KeyMapper/sysbridge/src/main/cpp/aidl -h /home/AC/AndroidStudioProjects/KeyMapper/sysbridge/src/main/cpp -I /home/AC/AndroidStudioProjects/KeyMapper/sysbridge/src/main/aidl /home/AC/AndroidStudioProjects/KeyMapper/sysbridge/src/main/aidl/io/github/sds100/keymapper/sysbridge/IEvdevCallback.aidl
  */
 #pragma once
 

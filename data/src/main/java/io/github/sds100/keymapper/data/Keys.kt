@@ -137,4 +137,11 @@ object Keys {
 
     val keyEventActionsUseSystemBridge =
         booleanPreferencesKey("key_key_event_actions_use_system_bridge")
+
+    // MQTT settings
+    val mqttBrokerUrl = stringPreferencesKey("key_mqtt_broker_url")
+    val mqttBrokerPort = stringPreferencesKey("key_mqtt_broker_port")
+    val mqttUsername = stringPreferencesKey("key_mqtt_username")
+    val mqttPassword = stringPreferencesKey("key_mqtt_password")
+    val mqttEnabled = booleanPreferencesKey("key_mqtt_enabled")
 }

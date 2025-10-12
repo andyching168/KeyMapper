@@ -12,4 +12,5 @@ enum class TriggerSetupShortcut {
     NOT_DETECTED,
     FLOATING_BUTTON_CUSTOM,
     FLOATING_BUTTON_LOCK_SCREEN,
+    MQTT,
 }

@@ -42,7 +42,8 @@ class SettingsViewModel @Inject constructor(
     DialogProvider by dialogProvider,
     ResourceProvider by resourceProvider,
     NavigationProvider by navigationProvider,
-    DefaultOptionsSettingsCallback {
+    DefaultOptionsSettingsCallback,
+    MqttSettingsCallback {
 
     val defaultLongPressDelay: Flow<Int> = useCase.defaultLongPressDelay
     val defaultDoublePressDelay: Flow<Int> = useCase.defaultDoublePressDelay
@@ -94,6 +95,20 @@ class SettingsViewModel @Inject constructor(
             defaultSequenceTriggerTimeout = PreferenceDefaults.SEQUENCE_TRIGGER_TIMEOUT,
         )
     }.stateIn(viewModelScope, SharingStarted.Lazily, DefaultSettingsState())
+
+    val mqttSettingsState: StateFlow<MqttSettingsState> = combine(
+        useCase.getPreference(Keys.mqttBrokerUrl),
+        useCase.getPreference(Keys.mqttBrokerPort),
+        useCase.getPreference(Keys.mqttUsername),
+        useCase.getPreference(Keys.mqttPassword),
+    ) { values ->
+        MqttSettingsState(
+            brokerUrl = values[0] as? String ?: "",
+            brokerPort = values[1] as? String ?: "1883",
+            username = values[2] as? String ?: "",
+            password = values[3] as? String ?: "",
+        )
+    }.stateIn(viewModelScope, SharingStarted.Lazily, MqttSettingsState())
 
     val automaticChangeImeSettingsState: StateFlow<AutomaticChangeImeSettingsState> = combine(
         useCase.getPreference(Keys.showToastWhenAutoChangingIme),
@@ -203,6 +218,12 @@ class SettingsViewModel @Inject constructor(
         }
     }
 
+    fun onMqttSettingsClick() {
+        viewModelScope.launch {
+            navigate("mqtt_settings", NavDestination.MqttSettings)
+        }
+    }
+
     override fun onLongPressDelayChanged(delay: Int) {
         viewModelScope.launch {
             useCase.setPreference(Keys.defaultLongPressDelay, delay)
@@ -236,6 +257,30 @@ class SettingsViewModel @Inject constructor(
     override fun onSequenceTriggerTimeoutChanged(timeout: Int) {
         viewModelScope.launch {
             useCase.setPreference(Keys.defaultSequenceTriggerTimeout, timeout)
+        }
+    }
+
+    override fun onBrokerUrlChanged(url: String) {
+        viewModelScope.launch {
+            useCase.setPreference(Keys.mqttBrokerUrl, url)
+        }
+    }
+
+    override fun onBrokerPortChanged(port: String) {
+        viewModelScope.launch {
+            useCase.setPreference(Keys.mqttBrokerPort, port)
+        }
+    }
+
+    override fun onUsernameChanged(username: String) {
+        viewModelScope.launch {
+            useCase.setPreference(Keys.mqttUsername, username)
+        }
+    }
+
+    override fun onPasswordChanged(password: String) {
+        viewModelScope.launch {
+            useCase.setPreference(Keys.mqttPassword, password)
         }
     }
 
@@ -366,4 +411,11 @@ data class AutomaticChangeImeSettingsState(
     val changeImeOnInputFocus: Boolean = PreferenceDefaults.CHANGE_IME_ON_INPUT_FOCUS,
     val changeImeOnDeviceConnect: Boolean = false,
     val toggleKeyboardOnToggleKeymaps: Boolean = false,
+)
+
+data class MqttSettingsState(
+    val brokerUrl: String = "",
+    val brokerPort: String = "1883",
+    val username: String = "",
+    val password: String = "",
 )

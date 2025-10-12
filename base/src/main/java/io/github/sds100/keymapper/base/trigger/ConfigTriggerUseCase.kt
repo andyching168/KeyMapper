@@ -19,6 +19,7 @@ import io.github.sds100.keymapper.data.entities.FingerprintTriggerKeyEntity
 import io.github.sds100.keymapper.data.entities.FloatingButtonKeyEntity
 import io.github.sds100.keymapper.data.entities.KeyEventTriggerKeyEntity
 import io.github.sds100.keymapper.data.entities.KeyMapEntity
+import io.github.sds100.keymapper.data.entities.MqttTriggerKeyEntity
 import io.github.sds100.keymapper.data.repositories.FloatingButtonRepository
 import io.github.sds100.keymapper.data.repositories.FloatingLayoutRepository
 import io.github.sds100.keymapper.data.repositories.KeyMapRepository
@@ -63,7 +64,7 @@ class ConfigTriggerUseCaseImpl @Inject constructor(
                         when (key) {
                             is EvdevTriggerKeyEntity -> EvdevTriggerKey.fromEntity(key)
                             is KeyEventTriggerKeyEntity -> KeyEventTriggerKey.fromEntity(key)
-                            is AssistantTriggerKeyEntity, is FingerprintTriggerKeyEntity, is FloatingButtonKeyEntity -> null
+                            is AssistantTriggerKeyEntity, is FingerprintTriggerKeyEntity, is FloatingButtonKeyEntity, is MqttTriggerKeyEntity -> null
                         }
                     }.filterIsInstance<KeyCodeTriggerKey>()
             }.firstBlocking()
@@ -99,6 +100,10 @@ class ConfigTriggerUseCaseImpl @Inject constructor(
 
     override fun addFingerprintGesture(type: FingerprintGestureType) = updateTrigger { trigger ->
         delegate.addFingerprintGesture(trigger, type)
+    }
+
+    override fun addMqttTriggerKey(topic: String, messagePattern: String, matchType: MqttMatchType) = updateTrigger { trigger ->
+        delegate.addMqttTriggerKey(trigger, topic, messagePattern, matchType)
     }
 
     override suspend fun addKeyEventTriggerKey(
@@ -307,6 +312,7 @@ interface ConfigTriggerUseCase : GetDefaultKeyMapOptionsUseCase {
     suspend fun addFloatingButtonTriggerKey(buttonUid: String)
     fun addAssistantTriggerKey(type: AssistantTriggerType)
     fun addFingerprintGesture(type: FingerprintGestureType)
+    fun addMqttTriggerKey(topic: String, messagePattern: String, matchType: MqttMatchType)
     suspend fun addEvdevTriggerKey(
         keyCode: Int,
         scanCode: Int,

@@ -39,6 +39,7 @@ sealed class TriggerKeyEntity : Parcelable {
                 is EvdevTriggerKeyEntity -> Gson().toJsonTree(key)
                 is FloatingButtonKeyEntity -> Gson().toJsonTree(key)
                 is FingerprintTriggerKeyEntity -> Gson().toJsonTree(key)
+                is MqttTriggerKeyEntity -> Gson().toJsonTree(key)
             }
         }
 
@@ -63,6 +64,10 @@ sealed class TriggerKeyEntity : Parcelable {
 
                     json.obj.has(EvdevTriggerKeyEntity.NAME_DEVICE_PRODUCT) -> {
                         return@jsonDeserializer deserializeEvdevTriggerKey(json, uid!!)
+                    }
+
+                    json.obj.has(MqttTriggerKeyEntity.NAME_TOPIC) -> {
+                        return@jsonDeserializer deserializeMqttTriggerKey(json, uid!!)
                     }
 
                     else -> {
@@ -146,6 +151,24 @@ sealed class TriggerKeyEntity : Parcelable {
                 flags ?: 0,
                 uid,
                 scanCode,
+            )
+        }
+
+        private fun deserializeMqttTriggerKey(
+            json: JsonElement,
+            uid: String,
+        ): MqttTriggerKeyEntity {
+            val topic by json.byString(MqttTriggerKeyEntity.NAME_TOPIC)
+            val messagePattern by json.byNullableString(MqttTriggerKeyEntity.NAME_MESSAGE_PATTERN)
+            val matchType by json.byNullableInt(MqttTriggerKeyEntity.NAME_MATCH_TYPE)
+            val clickType by json.byInt(NAME_CLICK_TYPE)
+
+            return MqttTriggerKeyEntity(
+                topic = topic,
+                messagePattern = messagePattern ?: "",
+                matchType = matchType ?: MqttTriggerKeyEntity.MATCH_EXACT,
+                clickType = clickType,
+                uid = uid,
             )
         }
     }

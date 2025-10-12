@@ -229,6 +229,50 @@ fun TriggerKeyOptionsBottomSheet(
                     isSelected = state.gestureType == FingerprintGestureType.SWIPE_RIGHT,
                     onSelected = { onSelectFingerprintGestureType(FingerprintGestureType.SWIPE_RIGHT) },
                 )
+            } else if (state is TriggerKeyOptionsState.Mqtt) {
+                Text(
+                    modifier = Modifier.padding(horizontal = 16.dp),
+                    text = stringResource(R.string.trigger_setup_mqtt_topic),
+                    style = MaterialTheme.typography.titleSmall,
+                )
+                
+                Text(
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
+                    text = state.topic,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                
+                Text(
+                    modifier = Modifier.padding(horizontal = 16.dp),
+                    text = stringResource(R.string.trigger_setup_mqtt_message_pattern),
+                    style = MaterialTheme.typography.titleSmall,
+                )
+                
+                Text(
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
+                    text = if (state.messagePattern.isEmpty()) stringResource(R.string.trigger_setup_mqtt_match_any) else state.messagePattern,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                
+                Text(
+                    modifier = Modifier.padding(horizontal = 16.dp),
+                    text = stringResource(R.string.trigger_setup_mqtt_match_type),
+                    style = MaterialTheme.typography.titleSmall,
+                )
+                
+                Text(
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
+                    text = when (state.matchType) {
+                        MqttMatchType.EXACT -> stringResource(R.string.trigger_setup_mqtt_match_exact)
+                        MqttMatchType.CONTAINS -> stringResource(R.string.trigger_setup_mqtt_match_contains)
+                        MqttMatchType.REGEX -> stringResource(R.string.trigger_setup_mqtt_match_regex)
+                        MqttMatchType.ANY -> stringResource(R.string.trigger_setup_mqtt_match_any)
+                    },
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
             }
 
             Spacer(Modifier.height(8.dp))

@@ -22,6 +22,7 @@ import io.github.sds100.keymapper.base.input.InputEventHub
 import io.github.sds100.keymapper.base.keymaps.FingerprintGesturesSupportedUseCase
 import io.github.sds100.keymapper.base.keymaps.PauseKeyMapsUseCase
 import io.github.sds100.keymapper.base.keymaps.TriggerKeyMapEvent
+import io.github.sds100.keymapper.base.mqtt.MqttClientAdapter
 import io.github.sds100.keymapper.base.promode.SystemBridgeSetupAssistantController
 import io.github.sds100.keymapper.base.system.inputmethod.AutoSwitchImeController
 import io.github.sds100.keymapper.base.trigger.RecordTriggerController
@@ -69,6 +70,7 @@ abstract class BaseAccessibilityServiceController(
     private val recordTriggerController: RecordTriggerController,
     private val setupAssistantControllerFactory: SystemBridgeSetupAssistantController.Factory,
     private val autoSwitchImeControllerFactory: AutoSwitchImeController.Factory,
+    private val mqttClientAdapter: MqttClientAdapter,
 ) {
     companion object {
         private const val DEFAULT_NOTIFICATION_TIMEOUT = 200L
@@ -235,6 +237,52 @@ abstract class BaseAccessibilityServiceController(
         pauseKeyMapsUseCase.isPaused.distinctUntilChanged().onEach {
             triggerKeyMapFromOtherAppsController.reset()
         }.launchIn(service.lifecycleScope)
+
+        // MQTT message handling
+        service.lifecycleScope.launch {
+            mqttClientAdapter.messageEvents.collect { mqttMessage ->
+                Timber.d("BaseAccessibilityServiceController: Received MQTT message - topic=${mqttMessage.topic}, message=${mqttMessage.message}, isPaused=${isPaused.value}")
+                if (!isPaused.value) {
+                    Timber.d("BaseAccessibilityServiceController: Forwarding to detection controller")
+                    keyMapDetectionController.onMqttMessage(mqttMessage.topic, mqttMessage.message)
+                } else {
+                    Timber.d("BaseAccessibilityServiceController: Skipped (paused)")
+                }
+            }
+        }
+
+        // MQTT topic subscription management based on enabled key maps
+        service.lifecycleScope.launch {
+            combine(
+                detectKeyMapsUseCase.allKeyMapList,
+                isPaused,
+            ) { keyMapList, isPaused ->
+                Timber.d("MQTT: Processing key maps - total: ${keyMapList.size}, isPaused: $isPaused")
+                if (isPaused) {
+                    emptySet()
+                } else {
+                    val mqttTriggers = keyMapList
+                        .filter { it.keyMap.isEnabled }
+                        .flatMap { it.keyMap.trigger.keys }
+                        .filterIsInstance<io.github.sds100.keymapper.base.trigger.MqttTriggerKey>()
+                    
+                    Timber.d("MQTT: Found ${mqttTriggers.size} MQTT triggers: ${mqttTriggers.map { "${it.topic}/${it.messagePattern}" }}")
+                    
+                    mqttTriggers.map { it.topic }.toSet()
+                }
+            }.distinctUntilChanged().collect { topics ->
+                Timber.d("MQTT: Topics to subscribe: $topics")
+                
+                if (topics.isNotEmpty()) {
+                    // Start connection first
+                    mqttClientAdapter.start()
+                    // Then update subscriptions
+                    mqttClientAdapter.updateSubscriptions(topics)
+                } else {
+                    mqttClientAdapter.stop()
+                }
+            }
+        }
 
         inputEvents.onEach {
             onEventFromUi(it)

@@ -27,6 +27,7 @@ import io.github.sds100.keymapper.base.promode.ProModeScreen
 import io.github.sds100.keymapper.base.promode.ProModeSetupScreen
 import io.github.sds100.keymapper.base.settings.AutomaticChangeImeSettingsScreen
 import io.github.sds100.keymapper.base.settings.DefaultOptionsSettingsScreen
+import io.github.sds100.keymapper.base.settings.MqttSettingsScreen
 import io.github.sds100.keymapper.base.settings.SettingsScreen
 import io.github.sds100.keymapper.base.settings.SettingsViewModel
 import io.github.sds100.keymapper.base.utils.navigation.NavDestination
@@ -101,6 +102,15 @@ fun BaseMainNavHost(
             val viewModel: SettingsViewModel = hiltViewModel()
 
             AutomaticChangeImeSettingsScreen(
+                modifier = Modifier.fillMaxSize(),
+                viewModel = viewModel,
+            )
+        }
+
+        composable<NavDestination.MqttSettings> {
+            val viewModel: SettingsViewModel = hiltViewModel()
+
+            MqttSettingsScreen(
                 modifier = Modifier.fillMaxSize(),
                 viewModel = viewModel,
             )

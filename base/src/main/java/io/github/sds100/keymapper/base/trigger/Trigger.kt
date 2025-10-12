@@ -83,6 +83,7 @@ object TriggerEntityMapper {
 
                 is FingerprintTriggerKeyEntity -> FingerprintTriggerKey.fromEntity(key)
                 is EvdevTriggerKeyEntity -> EvdevTriggerKey.fromEntity(key)
+                is io.github.sds100.keymapper.data.entities.MqttTriggerKeyEntity -> MqttTriggerKey.fromEntity(key)
             }
         }
 
@@ -190,6 +191,7 @@ object TriggerEntityMapper {
                 is FloatingButtonKey -> FloatingButtonKey.toEntity(key)
                 is FingerprintTriggerKey -> FingerprintTriggerKey.toEntity(key)
                 is EvdevTriggerKey -> EvdevTriggerKey.toEntity(key)
+                is MqttTriggerKey -> MqttTriggerKey.toEntity(key)
             }
         }
 

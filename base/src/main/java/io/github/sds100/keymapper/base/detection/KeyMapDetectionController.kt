@@ -81,6 +81,10 @@ class KeyMapDetectionController(
         algorithm.onFingerprintGesture(type)
     }
 
+    fun onMqttMessage(topic: String, message: String) {
+        algorithm.onMqttMessage(topic, message)
+    }
+
     fun onFloatingButtonDown(button: String) {
         algorithm.onFloatingButtonDown(button)
     }

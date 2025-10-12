@@ -55,6 +55,28 @@ class ConfigTriggerDelegate {
         return addTriggerKey(trigger, triggerKey)
     }
 
+    fun addMqttTriggerKey(
+        trigger: Trigger,
+        topic: String,
+        messagePattern: String,
+        matchType: MqttMatchType,
+    ): Trigger {
+        val clickType = when (trigger.mode) {
+            is TriggerMode.Parallel -> trigger.mode.clickType
+            TriggerMode.Sequence -> ClickType.SHORT_PRESS
+            TriggerMode.Undefined -> ClickType.SHORT_PRESS
+        }
+
+        val triggerKey = MqttTriggerKey(
+            topic = topic,
+            messagePattern = messagePattern,
+            matchType = matchType,
+            clickType = clickType,
+        )
+
+        return addTriggerKey(trigger, triggerKey)
+    }
+
     /**
      * @param otherTriggerKeys This needs to check the other triggers in the app so that it can
      * enable scancode detection by default in some situations.

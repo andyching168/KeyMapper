@@ -9,6 +9,7 @@ import io.github.sds100.keymapper.base.detection.DetectKeyMapsUseCaseImpl
 import io.github.sds100.keymapper.base.input.InputEventHub
 import io.github.sds100.keymapper.base.keymaps.FingerprintGesturesSupportedUseCase
 import io.github.sds100.keymapper.base.keymaps.PauseKeyMapsUseCase
+import io.github.sds100.keymapper.base.mqtt.MqttClientAdapter
 import io.github.sds100.keymapper.base.promode.SystemBridgeSetupAssistantController
 import io.github.sds100.keymapper.base.system.accessibility.AccessibilityNodeRecorder
 import io.github.sds100.keymapper.base.system.accessibility.BaseAccessibilityServiceController
@@ -32,6 +33,7 @@ class AccessibilityServiceController @AssistedInject constructor(
     recordTriggerController: RecordTriggerController,
     setupAssistantControllerFactory: SystemBridgeSetupAssistantController.Factory,
     autoSwitchImeControllerFactory: AutoSwitchImeController.Factory,
+    mqttClientAdapter: MqttClientAdapter,
 ) : BaseAccessibilityServiceController(
     service = service,
     accessibilityNodeRecorderFactory = accessibilityNodeRecorderFactory,
@@ -46,6 +48,7 @@ class AccessibilityServiceController @AssistedInject constructor(
     recordTriggerController = recordTriggerController,
     setupAssistantControllerFactory = setupAssistantControllerFactory,
     autoSwitchImeControllerFactory = autoSwitchImeControllerFactory,
+    mqttClientAdapter = mqttClientAdapter,
 ) {
     @AssistedFactory
     interface Factory {

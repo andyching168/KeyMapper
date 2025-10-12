@@ -4,6 +4,7 @@ package io.github.sds100.keymapper.base.trigger
 
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -12,14 +13,17 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.VolumeUp
+import androidx.compose.material.icons.outlined.Cloud
 import androidx.compose.material.icons.outlined.Mouse
 import androidx.compose.material.icons.rounded.Fingerprint
 import androidx.compose.material.icons.rounded.Keyboard
@@ -31,6 +35,8 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.RadioButton
 import androidx.compose.material3.SheetState
 import androidx.compose.material3.SheetValue
 import androidx.compose.material3.Surface
@@ -46,6 +52,8 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -153,6 +161,20 @@ fun HandleTriggerSetupBottomSheet(
             onChooseInputMethodClick = delegate::onChooseImeClick,
             onScreenOffCheckedChange = delegate::onScreenOffTriggerSetupCheckedChange,
             onEnableProModeClick = delegate::onEnableProModeClick,
+        )
+
+        is TriggerSetupState.Mqtt -> MqttTriggerSetupBottomSheet(
+            sheetState = sheetState,
+            state = triggerSetupState as TriggerSetupState.Mqtt,
+            onDismissRequest = delegate::onDismissTriggerSetup,
+            onBrokerAddressChanged = delegate::onMqttBrokerAddressChanged,
+            onBrokerPortChanged = delegate::onMqttBrokerPortChanged,
+            onUsernameChanged = delegate::onMqttUsernameChanged,
+            onPasswordChanged = delegate::onMqttPasswordChanged,
+            onTopicChanged = delegate::onMqttTopicChanged,
+            onMessagePatternChanged = delegate::onMqttMessagePatternChanged,
+            onMatchTypeChanged = delegate::onMqttMatchTypeChanged,
+            onAddTriggerClick = delegate::onAddMqttTriggerClick,
         )
 
         null -> {}
@@ -871,6 +893,7 @@ fun TriggerSetupBottomSheet(
 
             Column(
                 modifier = Modifier
+                    .weight(1f)
                     .animateContentSize()
                     .verticalScroll(rememberScrollState()),
                 verticalArrangement = Arrangement.spacedBy(8.dp),
@@ -1229,6 +1252,147 @@ private fun GamepadDpadDisabledPreview() {
                 enablingRequiresUserInput = true,
             ),
         )
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun MqttTriggerSetupBottomSheet(
+    modifier: Modifier = Modifier,
+    sheetState: SheetState,
+    state: TriggerSetupState.Mqtt,
+    onDismissRequest: () -> Unit = {},
+    onBrokerAddressChanged: (String) -> Unit = {},
+    onBrokerPortChanged: (Int) -> Unit = {},
+    onUsernameChanged: (String) -> Unit = {},
+    onPasswordChanged: (String) -> Unit = {},
+    onTopicChanged: (String) -> Unit = {},
+    onMessagePatternChanged: (String) -> Unit = {},
+    onMatchTypeChanged: (MqttMatchType) -> Unit = {},
+    onAddTriggerClick: () -> Unit = {},
+) {
+    TriggerSetupBottomSheet(
+        modifier = modifier,
+        sheetState = sheetState,
+        onDismissRequest = onDismissRequest,
+        title = stringResource(R.string.trigger_setup_mqtt_title),
+        icon = Icons.Outlined.Cloud,
+
+        positiveButtonContent = {
+            if (state.areRequirementsMet) {
+                AddTriggerButton(modifier = Modifier.weight(1f), onClick = onAddTriggerClick)
+            } else {
+                TriggerRequirementsNotMetButton(modifier = Modifier.weight(1f))
+            }
+        },
+    ) {
+        Text(
+            text = stringResource(R.string.trigger_setup_mqtt_requirements_info),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
+        )
+
+        HeaderText(text = stringResource(R.string.trigger_setup_mqtt_broker_section))
+
+        OutlinedTextField(
+            modifier = Modifier.fillMaxWidth(),
+            value = state.brokerAddress,
+            onValueChange = onBrokerAddressChanged,
+            label = { Text(stringResource(R.string.trigger_setup_mqtt_broker_address)) },
+            placeholder = { Text("broker.hivemq.com") },
+            singleLine = true,
+        )
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            OutlinedTextField(
+                modifier = Modifier.weight(1f),
+                value = state.brokerPort.toString(),
+                onValueChange = { value ->
+                    value.toIntOrNull()?.let { onBrokerPortChanged(it) }
+                },
+                label = { Text(stringResource(R.string.trigger_setup_mqtt_broker_port)) },
+                placeholder = { Text("1883") },
+                singleLine = true,
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+            )
+        }
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            OutlinedTextField(
+                modifier = Modifier.weight(1f),
+                value = state.username,
+                onValueChange = onUsernameChanged,
+                label = { Text(stringResource(R.string.trigger_setup_mqtt_username)) },
+                placeholder = { Text(stringResource(R.string.trigger_setup_mqtt_optional)) },
+                singleLine = true,
+            )
+
+            OutlinedTextField(
+                modifier = Modifier.weight(1f),
+                value = state.password,
+                onValueChange = onPasswordChanged,
+                label = { Text(stringResource(R.string.trigger_setup_mqtt_password)) },
+                placeholder = { Text(stringResource(R.string.trigger_setup_mqtt_optional)) },
+                singleLine = true,
+                visualTransformation = PasswordVisualTransformation(),
+            )
+        }
+
+        HeaderText(text = stringResource(R.string.trigger_setup_mqtt_trigger_section))
+
+        OutlinedTextField(
+            modifier = Modifier.fillMaxWidth(),
+            value = state.topic,
+            onValueChange = onTopicChanged,
+            label = { Text(stringResource(R.string.trigger_setup_mqtt_topic)) },
+            placeholder = { Text("home/sensor/temperature") },
+            singleLine = true,
+        )
+
+        OutlinedTextField(
+            modifier = Modifier.fillMaxWidth(),
+            value = state.messagePattern,
+            onValueChange = onMessagePatternChanged,
+            label = { Text(stringResource(R.string.trigger_setup_mqtt_message_pattern)) },
+            placeholder = { Text(stringResource(R.string.trigger_setup_mqtt_message_pattern_hint)) },
+            singleLine = true,
+        )
+
+        HeaderText(text = stringResource(R.string.trigger_setup_mqtt_match_type))
+
+        MqttMatchType.values().forEach { matchType ->
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { onMatchTypeChanged(matchType) }
+                    .padding(vertical = 4.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                RadioButton(
+                    selected = state.matchType == matchType,
+                    onClick = { onMatchTypeChanged(matchType) },
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = when (matchType) {
+                        MqttMatchType.EXACT -> stringResource(R.string.trigger_setup_mqtt_match_exact)
+                        MqttMatchType.CONTAINS -> stringResource(R.string.trigger_setup_mqtt_match_contains)
+                        MqttMatchType.REGEX -> stringResource(R.string.trigger_setup_mqtt_match_regex)
+                        MqttMatchType.ANY -> stringResource(R.string.trigger_setup_mqtt_match_any)
+                    },
+                    style = MaterialTheme.typography.bodyMedium,
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
     }
 }
 
