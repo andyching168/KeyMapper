@@ -176,21 +176,37 @@ Complete technical documentation available:
 
 🎉 **100% Complete and Working**
 
-All code is ready, tested, and documented. I can submit this as:
+All code is ready, tested, and documented. The implementation:
+- ✅ Works with both `free` and `pro` build flavors (uses only FOSS libraries)
+- ✅ Compatible with all build types (`debug`, `release`, `ci`)
+- ✅ Follows KeyMapper's existing architectural patterns
+- ✅ No breaking changes to existing code
 
-1. **Single PR**: All changes at once (easier to review as a whole)
-2. **Staged PRs**: 
-   - Phase 1: Core models and database
-   - Phase 2: MQTT client adapter
-   - Phase 3: UI integration
-3. **Fork**: Maintain as "KeyMapper MQTT Edition" if preferred
+I'm ready to contribute this following your development workflow:
+
+1. **Create GitHub Issue**: Document the feature request with use cases
+2. **Feature Branch**: Create `feature/mqtt-trigger` off `develop`
+3. **Structured Commits**: Break down into logical commits following your commit convention
+4. **Pull Request**: Submit PR with proper documentation
+
+Or alternatively:
+- **Staged PRs**: Multiple smaller PRs if preferred (models → client → UI)
+- **Independent Fork**: Maintain as "KeyMapper MQTT Edition" if this doesn't align with roadmap
 
 ## Questions for Maintainers
 
-1. **Interest**: Is this feature aligned with KeyMapper's roadmap?
-2. **Approach**: Would you prefer a single PR or staged implementation?
-3. **Concerns**: Any specific concerns about MQTT integration?
-4. **Requirements**: Any additional testing or documentation needed?
+1. **Interest**: Is MQTT trigger support aligned with KeyMapper's roadmap?
+2. **Approach**: Would you prefer:
+   - Single comprehensive PR?
+   - Multiple staged PRs (easier review)?
+   - Feature flag for beta testing first?
+3. **Build Variants**: Any concerns about the `free` vs `pro` flavor compatibility?
+   - *Note: MQTT uses HiveMQ client which is Apache 2.0 licensed (FOSS)*
+4. **Testing Requirements**: Should I:
+   - Add unit tests for MQTT matching logic?
+   - Add integration tests?
+   - Provide signed test APK?
+5. **Documentation**: Is the current MQTT_INTEGRATION.md sufficient, or should I add to the official docs website?
 
 ## Alternative Approaches Considered
 

@@ -29,33 +29,114 @@
 - [ ] 截圖檔案（PNG 格式，建議壓縮）
 - [ ] Demo APK（可選，但強烈建議）
 
-### 3. 代碼提交
+### 3. 代碼提交（遵循 KeyMapper 規範）
 
-在發布 Discussion 前，先提交代碼到你的 fork：
+⚠️ **重要**：KeyMapper 要求所有功能開發在 `feature/*` 分支！
+
+#### 步驟 1: 創建 GitHub Issue
+在你的 fork 上創建 Issue（或在發布 Discussion 後，在官方倉庫創建）：
+
+**Title**: MQTT Trigger Support for IoT and Smart Home Integration
+
+**Body**: (簡短版，完整版在 Discussion)
+```markdown
+## Feature Request
+Add MQTT trigger support to enable IoT and smart home automation.
+
+## Use Cases
+- Smart home integration (Home Assistant, OpenHAB)
+- IoT sensor triggers
+- Remote control via ESP32/Arduino devices
+
+## Implementation
+Complete implementation ready with:
+- HiveMQ MQTT Client (Apache 2.0)
+- 4 matching modes (Exact, Contains, Regex, Any)
+- Full UI integration
+- Comprehensive documentation
+```
+
+記下 Issue 編號（例如 #123）
+
+#### 步驟 2: 創建 Feature 分支並提交
 
 ```bash
 cd /home/AC/AndroidStudioProjects/KeyMapper
 
-# 1. 檢查狀態
-git status
+# 1. 確保在 develop 分支且已同步
+git checkout develop
+git pull origin develop
 
-# 2. 加入所有 MQTT 相關文件
-git add .
+# 2. 創建 feature 分支（依照 KeyMapper 命名規範）
+git checkout -b feature/mqtt-trigger
 
-# 3. 提交（使用清晰的訊息）
-git commit -m "feat: Add complete MQTT trigger support
+# 3. 分階段提交（每個 commit 遵循格式：<issue id> <type>: <subject>）
 
-- Add HiveMQ MQTT Client integration (v1.3.3)
-- Implement 4 message matching modes (Exact, Contains, Regex, Any)
-- Add MQTT Settings screen with broker configuration
-- Add MQTT trigger setup UI in TriggerSetupBottomSheet
-- Add auto-subscription management based on enabled KeyMaps
-- Add comprehensive documentation in MQTT_INTEGRATION.md
+# Commit 1: 核心數據模型
+git add data/src/main/java/io/github/sds100/keymapper/data/db/dao/MqttTriggerKeyDao.kt
+git add data/src/main/java/io/github/sds100/keymapper/data/entities/MqttTriggerKeyEntity.kt
+git add base/src/main/java/io/github/sds100/keymapper/mappings/trigger/MqttTriggerKey.kt
+git add base/src/main/java/io/github/sds100/keymapper/util/MqttMessageEvent.kt
+git commit -m "#123 feat: Add MQTT trigger data models and database entities"
 
-Closes #XXX (如果有相關 issue)"
+# Commit 2: MQTT Client 整合
+git add base/build.gradle.kts  # 添加 HiveMQ 依賴
+git add base/src/main/java/io/github/sds100/keymapper/system/mqtt/MqttClientAdapter.kt
+git commit -m "#123 feat: Implement HiveMQ MQTT client adapter with auto-reconnect"
+
+# Commit 3: 觸發器檢測邏輯
+git add base/src/main/java/io/github/sds100/keymapper/mappings/KeyMapAlgorithm.kt
+git add base/src/main/java/io/github/sds100/keymapper/mappings/KeyMapDetectionController.kt
+git add base/src/main/java/io/github/sds100/keymapper/system/accessibility/BaseAccessibilityServiceController.kt
+git commit -m "#123 feat: Add MQTT message matching logic with 4 match modes"
+
+# Commit 4: UI - Settings 頁面
+git add base/src/main/java/io/github/sds100/keymapper/data/Keys.kt
+git add base/src/main/java/io/github/sds100/keymapper/settings/MqttSettingsScreen.kt
+git add base/src/main/java/io/github/sds100/keymapper/settings/SettingsScreen.kt
+git add base/src/main/java/io/github/sds100/keymapper/settings/SettingsViewModel.kt
+git add base/src/main/java/io/github/sds100/keymapper/NavDestination.kt
+git add base/src/main/java/io/github/sds100/keymapper/BaseMainNavHost.kt
+git commit -m "#123 feat: Add MQTT settings screen with broker configuration UI"
+
+# Commit 5: UI - Trigger 設定
+git add base/src/main/java/io/github/sds100/keymapper/compose/TriggerSetupBottomSheet.kt
+git add base/src/main/java/io/github/sds100/keymapper/mappings/ConfigTriggerDelegate.kt
+git add base/src/main/java/io/github/sds100/keymapper/mappings/TriggerSetupState.kt
+git add base/src/main/java/io/github/sds100/keymapper/mappings/TriggerSetupShortcut.kt
+git add base/src/main/java/io/github/sds100/keymapper/compose/TriggerDiscoverScreen.kt
+git commit -m "#123 feat: Add MQTT trigger setup UI with auto-fill broker settings"
+
+# Commit 6: UI - Trigger 顯示
+git add base/src/main/java/io/github/sds100/keymapper/compose/TriggerKeyOptionsBottomSheet.kt
+git add base/src/main/java/io/github/sds100/keymapper/compose/TriggerKeyListItem.kt
+git add base/src/main/java/io/github/sds100/keymapper/mappings/BaseConfigTriggerViewModel.kt
+git commit -m "#123 feat: Add MQTT trigger display in trigger list and details"
+
+# Commit 7: 字串資源
+git add base/src/main/res/values/strings.xml
+git commit -m "#123 chore: Add MQTT-related string resources"
+
+# Commit 8: 文檔
+git add MQTT_INTEGRATION.md
+git commit -m "#123 docs: Add comprehensive MQTT integration documentation"
 
 # 4. 推送到你的 fork
-git push origin develop
+git push origin feature/mqtt-trigger
+```
+
+#### 步驟 3: 驗證 Build Variants
+
+確保所有變體都能編譯：
+```bash
+# 測試 free flavor
+./gradlew :app:assembleFreeDebug
+
+# 測試 pro flavor  
+./gradlew :app:assembleProDebug
+
+# 測試 CI build
+./gradlew :app:assembleFreeCi
 ```
 
 ## 📝 Discussion 發布步驟
