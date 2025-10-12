@@ -29,6 +29,10 @@ data class TriggerErrorSnapshot(
      * Can be null if the sdk version is not high enough.
      */
     val evdevDevices: List<EvdevDeviceInfo>?,
+    /**
+     * Whether the MQTT broker is connected.
+     */
+    val isMqttBrokerConnected: Boolean,
 ) {
     companion object {
         private val keysThatRequireDndAccess = arrayOf(
@@ -89,6 +93,12 @@ data class TriggerErrorSnapshot(
 
             if (evdevDevices != null && !evdevDevices.contains(key.device)) {
                 return TriggerError.EVDEV_DEVICE_NOT_FOUND
+            }
+        }
+
+        if (key is MqttTriggerKey) {
+            if (!isMqttBrokerConnected) {
+                return TriggerError.MQTT_BROKER_DISCONNECTED
             }
         }
 

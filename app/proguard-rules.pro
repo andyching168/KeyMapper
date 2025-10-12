@@ -235,3 +235,124 @@
 -dontwarn android.view.IWindowManager**
 -dontwarn com.android.internal.app.**
 -dontwarn com.android.internal.policy.**
+
+# ===== HiveMQ MQTT Client and Netty Rules =====
+
+# Keep HiveMQ MQTT Client classes
+-keep class com.hivemq.client.** { *; }
+-keepclassmembers class com.hivemq.client.** { *; }
+
+# Keep Netty core classes that are used
+-keep class io.netty.** { *; }
+-keepclassmembers class io.netty.** { *; }
+
+# Suppress warnings for optional Netty dependencies that we don't use
+-dontwarn io.netty.channel.epoll.**
+-dontwarn io.netty.handler.codec.http.**
+-dontwarn io.netty.handler.codec.http.websocketx.**
+-dontwarn io.netty.handler.proxy.**
+-dontwarn io.netty.internal.tcnative.**
+-dontwarn io.netty.handler.ssl.**
+
+# Suppress warnings for optional logging frameworks
+-dontwarn org.apache.log4j.**
+-dontwarn org.apache.logging.log4j.**
+-dontwarn org.slf4j.**
+-dontwarn org.eclipse.jetty.alpn.**
+-dontwarn org.eclipse.jetty.npn.**
+
+# Suppress reactor blockhound (not used in Android)
+-dontwarn reactor.blockhound.**
+
+# Suppress warnings for Netty compression codecs (we don't use compression)
+-dontwarn com.aayushatharva.brotli4j.**
+-dontwarn com.github.luben.zstd.**
+-dontwarn com.jcraft.jzlib.**
+-dontwarn com.ning.compress.**
+-dontwarn lzma.sdk.**
+-dontwarn net.jpountz.lz4.**
+-dontwarn net.jpountz.xxhash.**
+
+# Suppress warnings for Netty protobuf codecs (we don't use protobuf)
+-dontwarn com.google.protobuf.**
+
+# Suppress warnings for Netty marshalling codecs (we don't use JBoss marshalling)
+-dontwarn org.jboss.marshalling.**
+
+# Suppress warnings for GraalVM native image support (not used in Android)
+-dontwarn com.oracle.svm.core.annotate.**
+
+# Keep classes that use native methods (Netty buffer operations)
+-keepclasseswithmembernames,includedescriptorclasses class * {
+    native <methods>;
+}
+
+# Keep Netty's platform detection and resource leak detector
+-keep class io.netty.util.internal.PlatformDependent { *; }
+-keep class io.netty.util.ResourceLeakDetector { *; }
+
+# Keep Netty ByteBuf allocators
+-keep class io.netty.buffer.** { *; }
+
+# Keep JCTools concurrent queues (used by Netty, accessed via reflection)
+-keep class org.jctools.queues.** { *; }
+-keepclassmembers class org.jctools.queues.** {
+    long consumerIndex;
+    long producerIndex;
+    *;
+}
+
+# Keep Netty internal classes that use JCTools
+-keep class io.netty.util.internal.shaded.org.jctools.queues.** { *; }
+-keepclassmembers class io.netty.util.internal.shaded.org.jctools.queues.** {
+    long consumerIndex;
+    long producerIndex;
+    *;
+}
+
+# Keep classes accessed via reflection by HiveMQ client
+-keepattributes Signature,InnerClasses,EnclosingMethod
+
+# Preserve generic signatures for HiveMQ client builders
+-keep,allowobfuscation,allowshrinking class * implements com.hivemq.client.mqtt.**
+
+# Keep enums used in HiveMQ client
+-keepclassmembers enum com.hivemq.client.** {
+    public static **[] values();
+    public static ** valueOf(java.lang.String);
+}
+
+# ===== Navigation Component Rules =====
+
+# Keep all NavDestination classes and their serializers
+-keep class io.github.sds100.keymapper.base.utils.navigation.NavDestination** { *; }
+-keepclassmembers class io.github.sds100.keymapper.base.utils.navigation.NavDestination** { *; }
+
+# Keep all enums used in Navigation arguments (prevent obfuscation)
+-keep enum io.github.sds100.keymapper.base.trigger.TriggerSetupShortcut { *; }
+-keepclassmembers enum io.github.sds100.keymapper.base.trigger.TriggerSetupShortcut {
+    public static **[] values();
+    public static ** valueOf(java.lang.String);
+}
+
+# Keep other navigation-related enums
+-keep enum io.github.sds100.keymapper.base.** { *; }
+
+# Keep all serializable classes used in Navigation
+-keep,allowobfuscation,allowshrinking class * implements kotlinx.serialization.KSerializer
+-keep class * implements kotlinx.serialization.SerializationStrategy { *; }
+
+# Keep Navigation arguments classes
+-keepclassmembers class * {
+    @androidx.navigation.NavArgs <fields>;
+}
+
+# Keep Navigation serialization
+-keepnames class * extends androidx.navigation.** { *; }
+-keepclassmembers class * extends androidx.navigation.** {
+    <init>(...);
+}
+
+# ===== End of Navigation Rules =====
+
+# ===== End of MQTT/Netty Rules =====

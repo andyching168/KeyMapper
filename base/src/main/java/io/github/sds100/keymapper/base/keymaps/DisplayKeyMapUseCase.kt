@@ -8,6 +8,7 @@ import io.github.sds100.keymapper.base.actions.GetActionErrorUseCase
 import io.github.sds100.keymapper.base.constraints.DisplayConstraintUseCase
 import io.github.sds100.keymapper.base.constraints.GetConstraintErrorUseCase
 import io.github.sds100.keymapper.base.input.EvdevHandleCache
+import io.github.sds100.keymapper.base.mqtt.MqttClientAdapter
 import io.github.sds100.keymapper.base.purchasing.ProductId
 import io.github.sds100.keymapper.base.purchasing.PurchasingError.ProductNotPurchased
 import io.github.sds100.keymapper.base.purchasing.PurchasingManager
@@ -71,6 +72,7 @@ class DisplayKeyMapUseCaseImpl @Inject constructor(
     private val navigationProvider: NavigationProvider,
     private val systemBridgeConnectionManager: SystemBridgeConnectionManager,
     private val evdevHandleCache: EvdevHandleCache,
+    private val mqttClientAdapter: MqttClientAdapter,
 ) : DisplayKeyMapUseCase,
     GetActionErrorUseCase by getActionErrorUseCase,
     GetConstraintErrorUseCase by getConstraintErrorUseCase {
@@ -130,8 +132,10 @@ class DisplayKeyMapUseCaseImpl @Inject constructor(
         purchasesFlow,
         showDpadImeSetupError,
         systemBridgeConnectionState,
-        evdevDevices,
-    ) { _, purchases, showDpadImeSetupError, systemBridgeConnectionState, evdevDevices ->
+        combine(evdevDevices, mqttClientAdapter.isConnected) { devices, mqttConnected ->
+            Pair(devices, mqttConnected)
+        }
+    ) { _, purchases, showDpadImeSetupError, systemBridgeConnectionState, deviceAndMqtt ->
         TriggerErrorSnapshot(
             isKeyMapperImeChosen = keyMapperImeHelper.isCompatibleImeChosen(),
             isDndAccessGranted = permissionAdapter.isGranted(Permission.ACCESS_NOTIFICATION_POLICY),
@@ -139,7 +143,8 @@ class DisplayKeyMapUseCaseImpl @Inject constructor(
             purchases = purchases.dataOrNull() ?: Success(emptySet()),
             showDpadImeSetupError = showDpadImeSetupError,
             isSystemBridgeConnected = systemBridgeConnectionState is SystemBridgeConnectionState.Connected,
-            evdevDevices = evdevDevices,
+            evdevDevices = deviceAndMqtt.first,
+            isMqttBrokerConnected = deviceAndMqtt.second,
         )
     }
 
@@ -174,6 +179,10 @@ class DisplayKeyMapUseCaseImpl @Inject constructor(
 
             TriggerError.PURCHASE_VERIFICATION_FAILED -> purchasingManager.refresh()
             TriggerError.SYSTEM_BRIDGE_DISCONNECTED -> fixError(SystemBridgeError.Disconnected)
+            TriggerError.MQTT_BROKER_DISCONNECTED -> {
+                // Navigate to MQTT settings
+                navigationProvider.navigate("fix_mqtt_error", NavDestination.MqttSettings)
+            }
             TriggerError.EVDEV_DEVICE_NOT_FOUND, TriggerError.FLOATING_BUTTON_DELETED, TriggerError.SYSTEM_BRIDGE_UNSUPPORTED -> {}
         }
     }

@@ -80,6 +80,7 @@
     <string name="trigger_error_system_bridge_unsupported">PRO mode is unsupported on this Android version</string>
     <string name="trigger_error_system_bridge_disconnected">PRO mode not started!</string>
     <string name="trigger_error_evdev_device_not_found">Trigger device not connected!</string>
+    <string name="trigger_error_mqtt_broker_disconnected">MQTT broker not connected!</string>
 
     <string name="home_error_is_battery_optimised">Your key maps will stop working randomly!</string>
     <string name="home_error_key_maps_paused">Your key maps are paused!</string>

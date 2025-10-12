@@ -492,6 +492,7 @@ private fun getTriggerErrorMessage(error: TriggerError): String {
         TriggerError.SYSTEM_BRIDGE_UNSUPPORTED -> stringResource(R.string.trigger_error_system_bridge_unsupported)
         TriggerError.SYSTEM_BRIDGE_DISCONNECTED -> stringResource(R.string.trigger_error_system_bridge_disconnected)
         TriggerError.EVDEV_DEVICE_NOT_FOUND -> stringResource(R.string.trigger_error_evdev_device_not_found)
+        TriggerError.MQTT_BROKER_DISCONNECTED -> stringResource(R.string.trigger_error_mqtt_broker_disconnected)
     }
 }
 

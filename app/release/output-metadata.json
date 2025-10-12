@@ -1,0 +1,37 @@
+{
+  "version": 3,
+  "artifactType": {
+    "type": "APK",
+    "kind": "Directory"
+  },
+  "applicationId": "io.github.sds100.keymapper",
+  "variantName": "release",
+  "elements": [
+    {
+      "type": "SINGLE",
+      "filters": [],
+      "attributes": [],
+      "versionCode": 165,
+      "versionName": "4.0.0-beta.1-foss",
+      "outputFile": "keymapper-4.0.0-beta.1-foss.apk"
+    }
+  ],
+  "elementType": "File",
+  "baselineProfiles": [
+    {
+      "minApi": 28,
+      "maxApi": 30,
+      "baselineProfiles": [
+        "baselineProfiles/1/keymapper-4.0.0-beta.1-foss.dm"
+      ]
+    },
+    {
+      "minApi": 31,
+      "maxApi": 2147483647,
+      "baselineProfiles": [
+        "baselineProfiles/0/keymapper-4.0.0-beta.1-foss.dm"
+      ]
+    }
+  ],
+  "minSdkVersionForDexing": 26
+}
