@@ -20,6 +20,7 @@ import io.github.sds100.keymapper.base.utils.ui.showDialog
 import io.github.sds100.keymapper.common.utils.Orientation
 import io.github.sds100.keymapper.common.utils.State
 import io.github.sds100.keymapper.system.camera.CameraLens
+import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -31,7 +32,6 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
-import javax.inject.Inject
 
 @HiltViewModel
 class ChooseConstraintViewModel @Inject constructor(
@@ -89,6 +89,9 @@ class ChooseConstraintViewModel @Inject constructor(
             ConstraintId.CHARGING,
             ConstraintId.DISCHARGING,
 
+            ConstraintId.HINGE_CLOSED,
+            ConstraintId.HINGE_OPEN,
+
             ConstraintId.TIME,
         )
     }
@@ -137,16 +140,16 @@ class ChooseConstraintViewModel @Inject constructor(
                 ConstraintId.APP_NOT_IN_FOREGROUND,
                 ConstraintId.APP_PLAYING_MEDIA,
                 ConstraintId.APP_NOT_PLAYING_MEDIA,
-                -> onSelectAppConstraint(constraintType)
+                    -> onSelectAppConstraint(constraintType)
 
                 ConstraintId.MEDIA_PLAYING -> returnResult.emit(ConstraintData.MediaPlaying)
                 ConstraintId.MEDIA_NOT_PLAYING -> returnResult.emit(ConstraintData.NoMediaPlaying)
 
                 ConstraintId.BT_DEVICE_CONNECTED,
                 ConstraintId.BT_DEVICE_DISCONNECTED,
-                -> onSelectBluetoothConstraint(
-                    constraintType,
-                )
+                    -> onSelectBluetoothConstraint(
+                        constraintType,
+                    )
 
                 ConstraintId.SCREEN_ON -> returnResult.emit(ConstraintData.ScreenOn)
 
@@ -159,16 +162,24 @@ class ChooseConstraintViewModel @Inject constructor(
                     returnResult.emit(ConstraintData.OrientationLandscape)
 
                 ConstraintId.ORIENTATION_0 ->
-                    returnResult.emit(ConstraintData.OrientationCustom(orientation = Orientation.ORIENTATION_0))
+                    returnResult.emit(
+                        ConstraintData.OrientationCustom(orientation = Orientation.ORIENTATION_0),
+                    )
 
                 ConstraintId.ORIENTATION_90 ->
-                    returnResult.emit(ConstraintData.OrientationCustom(orientation = Orientation.ORIENTATION_90))
+                    returnResult.emit(
+                        ConstraintData.OrientationCustom(orientation = Orientation.ORIENTATION_90),
+                    )
 
                 ConstraintId.ORIENTATION_180 ->
-                    returnResult.emit(ConstraintData.OrientationCustom(orientation = Orientation.ORIENTATION_180))
+                    returnResult.emit(
+                        ConstraintData.OrientationCustom(orientation = Orientation.ORIENTATION_180),
+                    )
 
                 ConstraintId.ORIENTATION_270 ->
-                    returnResult.emit(ConstraintData.OrientationCustom(orientation = Orientation.ORIENTATION_270))
+                    returnResult.emit(
+                        ConstraintData.OrientationCustom(orientation = Orientation.ORIENTATION_270),
+                    )
 
                 ConstraintId.FLASHLIGHT_ON -> {
                     val lens = chooseFlashlightLens() ?: return@launch
@@ -185,13 +196,13 @@ class ChooseConstraintViewModel @Inject constructor(
 
                 ConstraintId.WIFI_CONNECTED,
                 ConstraintId.WIFI_DISCONNECTED,
-                -> onSelectWifiConnectedConstraint(
-                    constraintType,
-                )
+                    -> onSelectWifiConnectedConstraint(
+                        constraintType,
+                    )
 
                 ConstraintId.IME_CHOSEN,
                 ConstraintId.IME_NOT_CHOSEN,
-                -> onSelectImeChosenConstraint(constraintType)
+                    -> onSelectImeChosenConstraint(constraintType)
 
                 ConstraintId.DEVICE_IS_LOCKED ->
                     returnResult.emit(ConstraintData.DeviceIsLocked)
@@ -213,6 +224,12 @@ class ChooseConstraintViewModel @Inject constructor(
 
                 ConstraintId.DISCHARGING ->
                     returnResult.emit(ConstraintData.Discharging)
+
+                ConstraintId.HINGE_CLOSED ->
+                    returnResult.emit(ConstraintData.HingeClosed)
+
+                ConstraintId.HINGE_OPEN ->
+                    returnResult.emit(ConstraintData.HingeOpen)
 
                 ConstraintId.LOCK_SCREEN_SHOWING ->
                     returnResult.emit(ConstraintData.LockScreenShowing)
@@ -365,7 +382,9 @@ class ChooseConstraintViewModel @Inject constructor(
                 deviceName = device.name,
             )
 
-            else -> throw IllegalArgumentException("Don't know how to create $type constraint after choosing app")
+            else -> throw IllegalArgumentException(
+                "Don't know how to create $type constraint after choosing app",
+            )
         }
 
         returnResult.emit(constraintData)
@@ -396,7 +415,9 @@ class ChooseConstraintViewModel @Inject constructor(
                 packageName = packageName,
             )
 
-            else -> throw IllegalArgumentException("Don't know how to create $type constraint after choosing app")
+            else -> throw IllegalArgumentException(
+                "Don't know how to create $type constraint after choosing app",
+            )
         }
 
         returnResult.emit(constraintData)

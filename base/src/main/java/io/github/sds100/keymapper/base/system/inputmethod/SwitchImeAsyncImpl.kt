@@ -23,6 +23,7 @@ import io.github.sds100.keymapper.system.permissions.PermissionAdapter
 import io.github.sds100.keymapper.system.root.SuAdapter
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlinx.coroutines.runBlocking
 
 /**
  * This implementation of SwitchImeInterface communicates asynchronously with the accessibility
@@ -56,14 +57,16 @@ class SwitchImeAsyncImpl @Inject constructor(
     private fun enableImeWithoutUserInput(imeId: String): KMResult<Unit> {
         return inputMethodAdapter.getInfoByPackageName(buildConfigProvider.packageName)
             .then { keyMapperImeInfo ->
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU && imeId == keyMapperImeInfo.id) {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+                    imeId == keyMapperImeInfo.id
+                ) {
                     serviceAdapter.sendAsync(
                         AccessibilityServiceEvent.EnableInputMethod(
                             keyMapperImeInfo.id,
                         ),
                     )
                 } else {
-                    suAdapter.execute("ime enable $imeId")
+                    runBlocking { suAdapter.execute("ime enable $imeId").then { Success(Unit) } }
                 }
             }
     }

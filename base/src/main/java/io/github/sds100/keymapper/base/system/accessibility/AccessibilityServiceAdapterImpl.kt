@@ -6,7 +6,7 @@ import android.provider.Settings
 import dagger.hilt.android.qualifiers.ApplicationContext
 import io.github.sds100.keymapper.common.BuildConfigProvider
 import io.github.sds100.keymapper.common.KeyMapperClassProvider
-import io.github.sds100.keymapper.common.utils.KMError
+import io.github.sds100.keymapper.common.utils.AccessibilityServiceError
 import io.github.sds100.keymapper.common.utils.KMResult
 import io.github.sds100.keymapper.common.utils.SettingsUtils
 import io.github.sds100.keymapper.common.utils.Success
@@ -18,6 +18,8 @@ import io.github.sds100.keymapper.system.accessibility.AccessibilityServiceEvent
 import io.github.sds100.keymapper.system.accessibility.AccessibilityServiceState
 import io.github.sds100.keymapper.system.permissions.Permission
 import io.github.sds100.keymapper.system.permissions.PermissionAdapter
+import javax.inject.Inject
+import javax.inject.Singleton
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -27,8 +29,6 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeoutOrNull
 import timber.log.Timber
-import javax.inject.Inject
-import javax.inject.Singleton
 
 @Singleton
 class AccessibilityServiceAdapterImpl @Inject constructor(
@@ -65,11 +65,11 @@ class AccessibilityServiceAdapterImpl @Inject constructor(
 
         when (state) {
             AccessibilityServiceState.DISABLED -> {
-                return KMError.AccessibilityServiceDisabled
+                return AccessibilityServiceError.Disabled
             }
 
             AccessibilityServiceState.CRASHED -> {
-                return KMError.AccessibilityServiceCrashed
+                return AccessibilityServiceError.Crashed
             }
 
             AccessibilityServiceState.ENABLED -> {
@@ -87,12 +87,12 @@ class AccessibilityServiceAdapterImpl @Inject constructor(
 
         if (state.value == AccessibilityServiceState.DISABLED) {
             Timber.e("Failed to send event to accessibility service because disabled: $event")
-            return KMError.AccessibilityServiceDisabled
+            return AccessibilityServiceError.Disabled
         }
 
         if (state.value == AccessibilityServiceState.CRASHED) {
             Timber.e("Failed to send event to accessibility service because crashed: $event")
-            return KMError.AccessibilityServiceCrashed
+            return AccessibilityServiceError.Crashed
         }
 
         coroutineScope.launch {
@@ -125,7 +125,9 @@ class AccessibilityServiceAdapterImpl @Inject constructor(
                 }
 
                 val pong: AccessibilityServiceEvent.Pong? = withTimeoutOrNull(2000L) {
-                    eventReceiver.first { it == AccessibilityServiceEvent.Pong(key) } as AccessibilityServiceEvent.Pong?
+                    eventReceiver.first {
+                        it == AccessibilityServiceEvent.Pong(key)
+                    } as AccessibilityServiceEvent.Pong?
                 }
 
                 if (pong == null) {
@@ -235,7 +237,9 @@ class AccessibilityServiceAdapterImpl @Inject constructor(
         }
 
         val pong: AccessibilityServiceEvent.Pong? = withTimeoutOrNull(2000L) {
-            eventReceiver.first { it == AccessibilityServiceEvent.Pong(key) } as AccessibilityServiceEvent.Pong?
+            eventReceiver.first {
+                it == AccessibilityServiceEvent.Pong(key)
+            } as AccessibilityServiceEvent.Pong?
         }
 
         pingJob.cancel()

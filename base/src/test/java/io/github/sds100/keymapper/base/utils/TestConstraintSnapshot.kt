@@ -6,9 +6,12 @@ import io.github.sds100.keymapper.base.constraints.ConstraintSnapshot
 import io.github.sds100.keymapper.common.utils.Orientation
 import io.github.sds100.keymapper.system.bluetooth.BluetoothDeviceInfo
 import io.github.sds100.keymapper.system.camera.CameraLens
+import io.github.sds100.keymapper.system.foldable.HingeState
+import io.github.sds100.keymapper.system.foldable.isClosed
+import io.github.sds100.keymapper.system.foldable.isOpen
 import io.github.sds100.keymapper.system.phone.CallState
-import timber.log.Timber
 import java.time.LocalTime
+import timber.log.Timber
 
 class TestConstraintSnapshot(
     val appInForeground: String? = null,
@@ -26,6 +29,7 @@ class TestConstraintSnapshot(
     val isFrontFlashlightOn: Boolean = false,
     val isLockscreenShowing: Boolean = false,
     val localTime: LocalTime = LocalTime.now(),
+    val hingeState: HingeState = HingeState.Unavailable,
 ) : ConstraintSnapshot {
 
     override fun isSatisfied(constraint: Constraint): Boolean {
@@ -50,10 +54,12 @@ class TestConstraintSnapshot(
 
             is ConstraintData.OrientationCustom -> orientation == data.orientation
             is ConstraintData.OrientationLandscape ->
-                orientation == Orientation.ORIENTATION_90 || orientation == Orientation.ORIENTATION_270
+                orientation == Orientation.ORIENTATION_90 ||
+                    orientation == Orientation.ORIENTATION_270
 
             is ConstraintData.OrientationPortrait ->
-                orientation == Orientation.ORIENTATION_0 || orientation == Orientation.ORIENTATION_180
+                orientation == Orientation.ORIENTATION_0 ||
+                    orientation == Orientation.ORIENTATION_180
 
             is ConstraintData.ScreenOff -> !isScreenOn
             is ConstraintData.ScreenOn -> isScreenOn
@@ -107,6 +113,11 @@ class TestConstraintSnapshot(
                     localTime.isAfter(startTime) && localTime.isBefore(endTime)
                 }
             }
+
+            ConstraintData.HingeClosed ->
+                hingeState is HingeState.Available && hingeState.isClosed()
+            ConstraintData.HingeOpen ->
+                hingeState is HingeState.Available && hingeState.isOpen()
         }
 
         if (isSatisfied) {

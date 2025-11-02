@@ -1,6 +1,7 @@
 package io.github.sds100.keymapper.base.constraints
 
 import android.media.AudioManager
+import android.os.Build
 import io.github.sds100.keymapper.base.system.accessibility.IAccessibilityService
 import io.github.sds100.keymapper.common.utils.Orientation
 import io.github.sds100.keymapper.common.utils.firstBlocking
@@ -8,6 +9,10 @@ import io.github.sds100.keymapper.system.bluetooth.BluetoothDeviceInfo
 import io.github.sds100.keymapper.system.camera.CameraAdapter
 import io.github.sds100.keymapper.system.devices.DevicesAdapter
 import io.github.sds100.keymapper.system.display.DisplayAdapter
+import io.github.sds100.keymapper.system.foldable.FoldableAdapter
+import io.github.sds100.keymapper.system.foldable.HingeState
+import io.github.sds100.keymapper.system.foldable.isClosed
+import io.github.sds100.keymapper.system.foldable.isOpen
 import io.github.sds100.keymapper.system.inputmethod.InputMethodAdapter
 import io.github.sds100.keymapper.system.lock.LockScreenAdapter
 import io.github.sds100.keymapper.system.media.MediaAdapter
@@ -31,19 +36,26 @@ class LazyConstraintSnapshot(
     lockScreenAdapter: LockScreenAdapter,
     phoneAdapter: PhoneAdapter,
     powerAdapter: PowerAdapter,
+    private val foldableAdapter: FoldableAdapter,
 ) : ConstraintSnapshot {
     private val appInForeground: String? by lazy { accessibilityService.rootNode?.packageName }
-    private val connectedBluetoothDevices: Set<BluetoothDeviceInfo> by lazy { devicesAdapter.connectedBluetoothDevices.value }
+    private val connectedBluetoothDevices: Set<BluetoothDeviceInfo> by lazy {
+        devicesAdapter.connectedBluetoothDevices.value
+    }
     private val orientation: Orientation by lazy { displayAdapter.cachedOrientation }
     private val isScreenOn: Boolean by lazy { displayAdapter.isScreenOn.firstBlocking() }
-    private val appsPlayingMedia: List<String> by lazy { mediaAdapter.getActiveMediaSessionPackages() }
+    private val appsPlayingMedia: List<String> by lazy {
+        mediaAdapter.getActiveMediaSessionPackages()
+    }
 
     private val audioVolumeStreams: Set<Int> by lazy {
         mediaAdapter.getActiveAudioVolumeStreams()
     }
 
     private val isWifiEnabled: Boolean by lazy { networkAdapter.isWifiEnabled() }
-    private val connectedWifiSSID: String? by lazy { networkAdapter.connectedWifiSSIDFlow.firstBlocking() }
+    private val connectedWifiSSID: String? by lazy {
+        networkAdapter.connectedWifiSSIDFlow.firstBlocking()
+    }
     private val chosenImeId: String? by lazy { inputMethodAdapter.chosenIme.value?.id }
     private val callState: CallState by lazy { phoneAdapter.getCallState() }
     private val isCharging: Boolean by lazy { powerAdapter.isCharging.value }
@@ -59,7 +71,8 @@ class LazyConstraintSnapshot(
     private val localTime = LocalTime.now()
 
     private fun isMediaPlaying(): Boolean {
-        return audioVolumeStreams.contains(AudioManager.STREAM_MUSIC) || appsPlayingMedia.isNotEmpty()
+        return audioVolumeStreams.contains(AudioManager.STREAM_MUSIC) ||
+            appsPlayingMedia.isNotEmpty()
     }
 
     override fun isSatisfied(constraint: Constraint): Boolean {
@@ -94,10 +107,12 @@ class LazyConstraintSnapshot(
 
             is ConstraintData.OrientationCustom -> orientation == constraint.data.orientation
             is ConstraintData.OrientationLandscape ->
-                orientation == Orientation.ORIENTATION_90 || orientation == Orientation.ORIENTATION_270
+                orientation == Orientation.ORIENTATION_90 ||
+                    orientation == Orientation.ORIENTATION_270
 
             is ConstraintData.OrientationPortrait ->
-                orientation == Orientation.ORIENTATION_0 || orientation == Orientation.ORIENTATION_180
+                orientation == Orientation.ORIENTATION_0 ||
+                    orientation == Orientation.ORIENTATION_180
 
             is ConstraintData.ScreenOff -> !isScreenOn
             is ConstraintData.ScreenOn -> isScreenOn
@@ -141,16 +156,44 @@ class LazyConstraintSnapshot(
             is ConstraintData.Charging -> isCharging
             is ConstraintData.Discharging -> !isCharging
 
+            is ConstraintData.HingeClosed -> {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                    when (val state = foldableAdapter.hingeState.value) {
+                        is HingeState.Available -> state.isClosed()
+                        is HingeState.Unavailable -> false
+                    }
+                } else {
+                    false
+                }
+            }
+
+            is ConstraintData.HingeOpen -> {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                    when (val state = foldableAdapter.hingeState.value) {
+                        is HingeState.Available -> state.isOpen()
+                        is HingeState.Unavailable -> false
+                    }
+                } else {
+                    false
+                }
+            }
+
             // The keyguard manager still reports the lock screen as showing if you are in
             // an another activity like the camera app while the phone is locked.
-            is ConstraintData.LockScreenShowing -> isLockscreenShowing && appInForeground == "com.android.systemui"
-            is ConstraintData.LockScreenNotShowing -> !isLockscreenShowing || appInForeground != "com.android.systemui"
+            is ConstraintData.LockScreenShowing ->
+                isLockscreenShowing &&
+                    appInForeground == "com.android.systemui"
+            is ConstraintData.LockScreenNotShowing ->
+                !isLockscreenShowing ||
+                    appInForeground != "com.android.systemui"
 
             is ConstraintData.Time ->
                 if (constraint.data.startTime.isAfter(constraint.data.endTime)) {
-                    localTime.isAfter(constraint.data.startTime) || localTime.isBefore(constraint.data.endTime)
+                    localTime.isAfter(constraint.data.startTime) ||
+                        localTime.isBefore(constraint.data.endTime)
                 } else {
-                    localTime.isAfter(constraint.data.startTime) && localTime.isBefore(constraint.data.endTime)
+                    localTime.isAfter(constraint.data.startTime) &&
+                        localTime.isBefore(constraint.data.endTime)
                 }
         }
 

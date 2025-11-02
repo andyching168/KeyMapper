@@ -59,7 +59,8 @@ fun BaseTriggerScreen(
     val scope = rememberCoroutineScope()
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val recordTriggerState by viewModel.recordTriggerState.collectAsStateWithLifecycle()
-    val showFingerprintGestures: Boolean by viewModel.showFingerprintGesturesShortcut.collectAsStateWithLifecycle()
+    val showFingerprintGestures: Boolean by
+        viewModel.showFingerprintGesturesShortcut.collectAsStateWithLifecycle()
 
     HandleTriggerSetupBottomSheet(viewModel)
 
@@ -118,7 +119,9 @@ fun BaseTriggerScreen(
                         title = tip.title,
                         message = tip.message,
                         isDismissable = tip.isDismissable,
-                        onDismiss = viewModel::onDismissClick,
+                        onDismiss = viewModel::onTriggerTipDismissClick,
+                        buttonText = tip.buttonText,
+                        onButtonClick = { viewModel.onTipButtonClick(tip.id) },
                     )
 
                     Spacer(Modifier.height(8.dp))
@@ -181,7 +184,8 @@ private fun isHorizontalLayout(): Boolean {
 private fun isVerticalCompactLayout(): Boolean {
     val windowSizeClass = currentWindowAdaptiveInfo().windowSizeClass
 
-    return windowSizeClass.windowHeightSizeClass == WindowHeightSizeClass.COMPACT && windowSizeClass.windowWidthSizeClass == WindowWidthSizeClass.COMPACT
+    return windowSizeClass.windowHeightSizeClass == WindowHeightSizeClass.COMPACT &&
+        windowSizeClass.windowWidthSizeClass == WindowWidthSizeClass.COMPACT
 }
 
 @Composable
@@ -669,7 +673,10 @@ private fun HorizontalPreview() {
                         .fillMaxWidth()
                         .padding(horizontal = 16.dp),
                     title = "Tip Title",
-                    message = "This is a tip message to help the user understand something about the current screen. It can be quite long so it should wrap properly.",
+                    message = """
+                        This is a tip message to help the user understand something about the 
+                        current screen. It can be quite long so it should wrap properly.
+                    """.trimIndent(),
                     onDismiss = {},
                 )
 

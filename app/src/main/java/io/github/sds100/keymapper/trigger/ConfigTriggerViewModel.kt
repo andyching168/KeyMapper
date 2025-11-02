@@ -6,6 +6,7 @@ import io.github.sds100.keymapper.base.keymaps.DisplayKeyMapUseCase
 import io.github.sds100.keymapper.base.keymaps.FingerprintGesturesSupportedUseCase
 import io.github.sds100.keymapper.base.onboarding.OnboardingTipDelegate
 import io.github.sds100.keymapper.base.onboarding.OnboardingUseCase
+import io.github.sds100.keymapper.base.onboarding.SetupAccessibilityServiceDelegate
 import io.github.sds100.keymapper.base.shortcuts.CreateKeyMapShortcutUseCase
 import io.github.sds100.keymapper.base.trigger.BaseConfigTriggerViewModel
 import io.github.sds100.keymapper.base.trigger.ConfigTriggerUseCase
@@ -15,8 +16,8 @@ import io.github.sds100.keymapper.base.trigger.TriggerSetupShortcut
 import io.github.sds100.keymapper.base.utils.navigation.NavigationProvider
 import io.github.sds100.keymapper.base.utils.ui.DialogProvider
 import io.github.sds100.keymapper.base.utils.ui.ResourceProvider
-import kotlinx.coroutines.launch
 import javax.inject.Inject
+import kotlinx.coroutines.launch
 
 @HiltViewModel
 class ConfigTriggerViewModel @Inject constructor(
@@ -26,6 +27,7 @@ class ConfigTriggerViewModel @Inject constructor(
     private val createKeyMapShortcut: CreateKeyMapShortcutUseCase,
     private val displayKeyMap: DisplayKeyMapUseCase,
     private val fingerprintGesturesSupported: FingerprintGesturesSupportedUseCase,
+    setupAccessibilityServiceDelegate: SetupAccessibilityServiceDelegate,
     onboardingTipDelegate: OnboardingTipDelegate,
     triggerSetupDelegate: TriggerSetupDelegate,
     resourceProvider: ResourceProvider,
@@ -38,6 +40,7 @@ class ConfigTriggerViewModel @Inject constructor(
     createKeyMapShortcut = createKeyMapShortcut,
     displayKeyMap = displayKeyMap,
     fingerprintGesturesSupported = fingerprintGesturesSupported,
+    setupAccessibilityServiceDelegate = setupAccessibilityServiceDelegate,
     onboardingTipDelegate = onboardingTipDelegate,
     triggerSetupDelegate = triggerSetupDelegate,
     resourceProvider = resourceProvider,
@@ -48,13 +51,13 @@ class ConfigTriggerViewModel @Inject constructor(
 
     override fun onEditFloatingLayoutClick() {}
 
-    override fun showTriggerSetup(shortcut: TriggerSetupShortcut) {
+    override fun showTriggerSetup(shortcut: TriggerSetupShortcut, forceProMode: Boolean) {
         when (shortcut) {
             TriggerSetupShortcut.ASSISTANT -> viewModelScope.launch {
                 navigateToAdvancedTriggers("purchase_assistant_trigger")
             }
 
-            else -> super.showTriggerSetup(shortcut)
+            else -> super.showTriggerSetup(shortcut, forceProMode)
         }
     }
 }

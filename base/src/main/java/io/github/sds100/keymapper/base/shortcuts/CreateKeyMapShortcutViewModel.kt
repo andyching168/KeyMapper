@@ -29,6 +29,7 @@ import io.github.sds100.keymapper.base.utils.ui.TintType
 import io.github.sds100.keymapper.base.utils.ui.compose.ComposeIconInfo
 import io.github.sds100.keymapper.common.utils.State
 import io.github.sds100.keymapper.common.utils.mapData
+import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asSharedFlow
@@ -38,7 +39,6 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
-import javax.inject.Inject
 
 @HiltViewModel
 class CreateKeyMapShortcutViewModel @Inject constructor(
@@ -62,6 +62,7 @@ class CreateKeyMapShortcutViewModel @Inject constructor(
             isPaused = false,
         ),
         listItems = State.Loading,
+        showCreateKeyMapTapTarget = false,
     )
     private val _state: MutableStateFlow<KeyMapListState> = MutableStateFlow(initialState)
     val state = _state.asStateFlow()
@@ -80,7 +81,13 @@ class CreateKeyMapShortcutViewModel @Inject constructor(
                 listKeyMaps.triggerErrorSnapshot,
                 listKeyMaps.actionErrorSnapshot,
                 listKeyMaps.constraintErrorSnapshot,
-            ) { keyMapGroup, showDeviceDescriptors, triggerErrorSnapshot, actionErrorSnapshot, constraintErrorSnapshot ->
+            ) {
+                    keyMapGroup,
+                    showDeviceDescriptors,
+                    triggerErrorSnapshot,
+                    actionErrorSnapshot,
+                    constraintErrorSnapshot,
+                ->
                 _state.value = buildState(
                     keyMapGroup,
                     showDeviceDescriptors,
@@ -151,12 +158,14 @@ class CreateKeyMapShortcutViewModel @Inject constructor(
                 breadcrumbs = breadcrumbs,
                 isEditingGroupName = false,
                 isNewGroup = false,
-                parentConstraintCount = keyMapGroup.parents.sumOf { it.constraintState.constraints.size },
+                parentConstraintCount = keyMapGroup.parents.sumOf {
+                    it.constraintState.constraints.size
+                },
                 keyMapsEnabled = null,
             )
         }
 
-        return KeyMapListState(appBarState, listItemsState)
+        return KeyMapListState(appBarState, listItemsState, showCreateKeyMapTapTarget = false)
     }
 
     fun onKeyMapCardClick(uid: String) {

@@ -126,7 +126,9 @@ private fun CreateKeyMapShortcutScreen(
                                     IconButton(onClick = { showBackDialog = true }) {
                                         Icon(
                                             Icons.AutoMirrored.Rounded.ArrowBack,
-                                            contentDescription = stringResource(R.string.bottom_app_bar_back_content_description),
+                                            contentDescription = stringResource(
+                                                R.string.bottom_app_bar_back_content_description,
+                                            ),
                                         )
                                     }
                                 },
@@ -157,14 +159,18 @@ private fun CreateKeyMapShortcutScreen(
                                     IconButton(onClick = onPopGroupClick) {
                                         Icon(
                                             Icons.AutoMirrored.Rounded.ArrowBack,
-                                            contentDescription = stringResource(R.string.home_app_bar_pop_group),
+                                            contentDescription = stringResource(
+                                                R.string.home_app_bar_pop_group,
+                                            ),
                                         )
                                     }
                                 },
                                 colors = TopAppBarDefaults.topAppBarColors(
                                     containerColor = MaterialTheme.colorScheme.primaryContainer,
-                                    titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                                    navigationIconContentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                                    titleContentColor =
+                                    MaterialTheme.colorScheme.onPrimaryContainer,
+                                    navigationIconContentColor =
+                                    MaterialTheme.colorScheme.onPrimaryContainer,
                                 ),
                             )
 
@@ -265,7 +271,9 @@ private fun keyMapSampleList(): List<KeyMapListItemModel> {
                 actions = listOf(
                     ComposeChipModel.Normal(
                         id = "0",
-                        ComposeIconInfo.Drawable(drawable = context.drawable(R.drawable.ic_launcher_web)),
+                        ComposeIconInfo.Drawable(
+                            drawable = context.drawable(R.drawable.ic_launcher_web),
+                        ),
                         "Open Key Mapper",
                     ),
                     ComposeChipModel.Error(
@@ -288,7 +296,9 @@ private fun keyMapSampleList(): List<KeyMapListItemModel> {
                 constraints = listOf(
                     ComposeChipModel.Normal(
                         id = "0",
-                        ComposeIconInfo.Drawable(drawable = context.drawable(R.drawable.ic_launcher_web)),
+                        ComposeIconInfo.Drawable(
+                            drawable = context.drawable(R.drawable.ic_launcher_web),
+                        ),
                         "Key Mapper is not open",
                     ),
                     ComposeChipModel.Error(
@@ -377,6 +387,7 @@ private fun PreviewRootGroup() {
                     isPaused = true,
                 ),
                 listItems = State.Data(keyMapSampleList()),
+                showCreateKeyMapTapTarget = false,
             ),
             showShortcutNameDialog = null,
         )
@@ -401,6 +412,7 @@ private fun PreviewChildGroup() {
                     keyMapsEnabled = null,
                 ),
                 listItems = State.Data(keyMapSampleList()),
+                showCreateKeyMapTapTarget = false,
             ),
             showShortcutNameDialog = null,
         )
@@ -419,6 +431,7 @@ private fun PreviewEmpty() {
                     isPaused = true,
                 ),
                 listItems = State.Data(emptyList()),
+                showCreateKeyMapTapTarget = false,
             ),
             showShortcutNameDialog = null,
         )

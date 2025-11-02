@@ -16,16 +16,18 @@ import androidx.annotation.RequiresApi
 import androidx.core.content.ContextCompat
 import dagger.hilt.android.qualifiers.ApplicationContext
 import io.github.sds100.keymapper.common.BuildConfigProvider
+import io.github.sds100.keymapper.common.models.isSuccess
 import io.github.sds100.keymapper.common.utils.KMError
 import io.github.sds100.keymapper.common.utils.KMResult
 import io.github.sds100.keymapper.common.utils.SettingsUtils
 import io.github.sds100.keymapper.common.utils.Success
 import io.github.sds100.keymapper.common.utils.onFailure
-import io.github.sds100.keymapper.common.utils.success
 import io.github.sds100.keymapper.sysbridge.ISystemBridge
 import io.github.sds100.keymapper.sysbridge.ktx.TAG
 import io.github.sds100.keymapper.sysbridge.starter.SystemBridgeStarter
 import io.github.sds100.keymapper.sysbridge.utils.SystemBridgeError
+import javax.inject.Inject
+import javax.inject.Singleton
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -34,8 +36,6 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import timber.log.Timber
-import javax.inject.Inject
-import javax.inject.Singleton
 
 /**
  * This class handles starting, stopping and (dis)connecting to the system bridge.
@@ -54,8 +54,9 @@ class SystemBridgeConnectionManagerImpl @Inject constructor(
     override val connectionState: MutableStateFlow<SystemBridgeConnectionState> =
         MutableStateFlow<SystemBridgeConnectionState>(
             SystemBridgeConnectionState.Disconnected(
-                time = SystemClock.elapsedRealtime(), isExpected = true
-            )
+                time = SystemClock.elapsedRealtime(),
+                isExpected = true,
+            ),
         )
     private var isExpectedDeath: Boolean = false
 
@@ -68,7 +69,7 @@ class SystemBridgeConnectionManagerImpl @Inject constructor(
             connectionState.update {
                 SystemBridgeConnectionState.Disconnected(
                     time = SystemClock.elapsedRealtime(),
-                    isExpected = isExpectedDeath
+                    isExpected = isExpectedDeath,
                 )
             }
 
@@ -117,7 +118,7 @@ class SystemBridgeConnectionManagerImpl @Inject constructor(
                     // calls this message.
                     Log.w(
                         TAG,
-                        "System Bridge version mismatch! Restarting it. App: ${buildConfigProvider.versionCode}, System Bridge: ${systemBridge.versionCode}"
+                        "System Bridge version mismatch! Restarting it. App: ${buildConfigProvider.versionCode}, System Bridge: ${systemBridge.versionCode}",
                     )
 
                     restartSystemBridge(systemBridge)
@@ -130,7 +131,16 @@ class SystemBridgeConnectionManagerImpl @Inject constructor(
     private suspend fun restartSystemBridge(systemBridge: ISystemBridge) {
         starter.startSystemBridge(executeCommand = { command ->
             try {
-                systemBridge.executeCommand(command)!!.success()
+                val result = systemBridge.executeCommand(command, 10000L)!!
+                if (result.isSuccess()) {
+                    Success(result.stdout)
+                } else {
+                    KMError.Exception(
+                        Exception(
+                            "Command failed with exit code ${result.exitCode}: ${result.stdout}",
+                        ),
+                    )
+                }
             } catch (_: DeadObjectException) {
                 // This exception is expected since it is killing the system bridge
                 Success("")
@@ -148,6 +158,7 @@ class SystemBridgeConnectionManagerImpl @Inject constructor(
 
             return Success(block(systemBridge))
         } catch (e: RemoteException) {
+            Timber.e(e, "RemoteException when running block with System Bridge")
             return KMError.Exception(e)
         }
     }
@@ -186,18 +197,19 @@ class SystemBridgeConnectionManagerImpl @Inject constructor(
             }
 
         systemBridge.grantPermission(Manifest.permission.WRITE_SECURE_SETTINGS, deviceId)
-        Timber.i("Granted WRITE_SECURE_SETTINGS permission with System Bridge")
+        systemBridge.grantPermission(Manifest.permission.READ_LOGS, deviceId)
+        Timber.i("Granted WRITE_SECURE_SETTINGS and READ_LOGS permission with System Bridge")
 
         if (ContextCompat.checkSelfPermission(
                 ctx,
-                Manifest.permission.WRITE_SECURE_SETTINGS
+                Manifest.permission.WRITE_SECURE_SETTINGS,
             ) == PERMISSION_GRANTED
         ) {
             // Disable automatic revoking of ADB pairings
             SettingsUtils.putGlobalSetting(
                 ctx,
                 "adb_allowed_connection_time",
-                0
+                0,
             )
 
             // Enable USB debugging so the Shell user can keep running in the background
@@ -205,7 +217,7 @@ class SystemBridgeConnectionManagerImpl @Inject constructor(
             SettingsUtils.putGlobalSetting(
                 ctx,
                 "adb_enabled",
-                1
+                1,
             )
         }
     }
@@ -237,4 +249,8 @@ interface SystemBridgeConnectionManager {
     fun startWithRoot()
     fun startWithShizuku()
     fun startWithAdb()
+}
+
+fun SystemBridgeConnectionManager.isConnected(): Boolean {
+    return connectionState.value is SystemBridgeConnectionState.Connected
 }

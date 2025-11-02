@@ -2,16 +2,16 @@ package io.github.sds100.keymapper.base.trigger
 
 import android.os.Build
 import dagger.hilt.android.scopes.ViewModelScoped
-import io.github.sds100.keymapper.base.system.accessibility.ControlAccessibilityServiceUseCase
+import io.github.sds100.keymapper.base.onboarding.SetupAccessibilityServiceDelegate
 import io.github.sds100.keymapper.base.system.accessibility.FingerprintGestureType
+import io.github.sds100.keymapper.base.utils.ProModeStatus
 import io.github.sds100.keymapper.base.utils.navigation.NavDestination
 import io.github.sds100.keymapper.base.utils.navigation.NavigationProvider
 import io.github.sds100.keymapper.base.utils.navigation.navigate
 import io.github.sds100.keymapper.base.utils.ui.DialogProvider
 import io.github.sds100.keymapper.base.utils.ui.ResourceProvider
-import io.github.sds100.keymapper.base.utils.ui.ViewModelHelper
+import io.github.sds100.keymapper.common.utils.AccessibilityServiceError
 import io.github.sds100.keymapper.common.utils.Constants
-import io.github.sds100.keymapper.common.utils.KMError
 import io.github.sds100.keymapper.common.utils.KMResult
 import io.github.sds100.keymapper.common.utils.onFailure
 import io.github.sds100.keymapper.common.utils.onSuccess
@@ -20,6 +20,8 @@ import io.github.sds100.keymapper.data.repositories.PreferenceRepository
 import io.github.sds100.keymapper.sysbridge.manager.SystemBridgeConnectionManager
 import io.github.sds100.keymapper.sysbridge.manager.SystemBridgeConnectionState
 import io.github.sds100.keymapper.system.accessibility.AccessibilityServiceState
+import javax.inject.Inject
+import javax.inject.Named
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
@@ -27,7 +29,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
@@ -35,15 +36,13 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import timber.log.Timber
-import javax.inject.Inject
-import javax.inject.Named
 
 @OptIn(ExperimentalCoroutinesApi::class)
 @ViewModelScoped
 class TriggerSetupDelegateImpl @Inject constructor(
     @Named("viewmodel")
     val viewModelScope: CoroutineScope,
-    val controlAccessibilityServiceUseCase: ControlAccessibilityServiceUseCase,
+    val setupAccessibilityServiceDelegate: SetupAccessibilityServiceDelegate,
     val recordTriggerController: RecordTriggerController,
     val systemBridgeConnectionManager: SystemBridgeConnectionManager,
     val configTriggerUseCase: ConfigTriggerUseCase,
@@ -55,12 +54,16 @@ class TriggerSetupDelegateImpl @Inject constructor(
 ) : TriggerSetupDelegate,
     ResourceProvider by resourceProvider,
     DialogProvider by dialogProvider,
-    NavigationProvider by navigationProvider {
+    NavigationProvider by navigationProvider,
+    SetupAccessibilityServiceDelegate by setupAccessibilityServiceDelegate {
 
     private val currentSetupShortcut: MutableStateFlow<TriggerSetupShortcut?> =
         MutableStateFlow(null)
 
     private val isScreenOffChecked: MutableStateFlow<Boolean> = MutableStateFlow(false)
+    private val isProModeLocked: MutableStateFlow<Boolean> = MutableStateFlow(false)
+    private val forceProMode: MutableStateFlow<Boolean> = MutableStateFlow(false)
+
     private val selectedFingerprintGestureType: MutableStateFlow<FingerprintGestureType> =
         MutableStateFlow(FingerprintGestureType.SWIPE_DOWN)
 
@@ -109,7 +112,13 @@ class TriggerSetupDelegateImpl @Inject constructor(
             }
         }.stateIn(viewModelScope, SharingStarted.Lazily, null)
 
-    override fun showTriggerSetup(shortcut: TriggerSetupShortcut) {
+    override fun showTriggerSetup(shortcut: TriggerSetupShortcut, forceProMode: Boolean) {
+        isProModeLocked.value = true
+        this.forceProMode.value = forceProMode
+        // If force pro mode is enabled, automatically check the screen off option
+        if (forceProMode) {
+            isScreenOffChecked.value = true
+        }
         currentSetupShortcut.value = shortcut
         
         // Load saved MQTT broker settings when showing MQTT setup
@@ -150,23 +159,26 @@ class TriggerSetupDelegateImpl @Inject constructor(
 
     private fun buildSetupVolumeTriggerFlow(): Flow<TriggerSetupState> {
         return combine(
-            controlAccessibilityServiceUseCase.serviceState,
+            accessibilityServiceState,
             isScreenOffChecked,
             recordTriggerController.state,
             proModeStatus,
-        ) { serviceState, isScreenOffChecked, recordTriggerState, proModeStatus ->
+            forceProMode,
+        ) { serviceState, isScreenOffChecked, recordTriggerState, proModeStatus, forceProMode ->
             val areRequirementsMet = if (isScreenOffChecked) {
-                serviceState == AccessibilityServiceState.ENABLED && proModeStatus == ProModeStatus.ENABLED
+                serviceState == AccessibilityServiceState.ENABLED &&
+                    proModeStatus == ProModeStatus.ENABLED
             } else {
                 serviceState == AccessibilityServiceState.ENABLED
             }
 
             TriggerSetupState.Volume(
                 isAccessibilityServiceEnabled = serviceState == AccessibilityServiceState.ENABLED,
-                isScreenOffChecked = isScreenOffChecked,
+                isUseProModeChecked = isScreenOffChecked,
                 proModeStatus = proModeStatus,
                 areRequirementsMet = areRequirementsMet,
                 recordTriggerState = recordTriggerState,
+                forceProMode = forceProMode,
             )
         }
     }
@@ -176,44 +188,58 @@ class TriggerSetupDelegateImpl @Inject constructor(
             when (selectedGamepadType) {
                 TriggerSetupState.Gamepad.Type.DPAD -> {
                     combine(
-                        controlAccessibilityServiceUseCase.serviceState,
+                        accessibilityServiceState,
                         setupInputMethodUseCase.isEnabled,
                         setupInputMethodUseCase.isChosen,
                         recordTriggerController.state,
                     ) { serviceState, isImeEnabled, isImeChosen, recordTriggerState ->
                         val areRequirementsMet =
-                            serviceState == AccessibilityServiceState.ENABLED && isImeEnabled && isImeChosen
+                            serviceState == AccessibilityServiceState.ENABLED &&
+                                isImeEnabled &&
+                                isImeChosen
 
                         TriggerSetupState.Gamepad.Dpad(
-                            isAccessibilityServiceEnabled = serviceState == AccessibilityServiceState.ENABLED,
+                            isAccessibilityServiceEnabled =
+                            serviceState == AccessibilityServiceState.ENABLED,
                             isImeEnabled = isImeEnabled,
                             isImeChosen = isImeChosen,
                             areRequirementsMet = areRequirementsMet,
                             recordTriggerState = recordTriggerState,
-                            enablingRequiresUserInput = Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU,
+                            enablingRequiresUserInput =
+                            Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU,
                         )
                     }
                 }
 
                 TriggerSetupState.Gamepad.Type.SIMPLE_BUTTONS -> {
                     combine(
-                        controlAccessibilityServiceUseCase.serviceState,
+                        accessibilityServiceState,
                         isScreenOffChecked,
                         recordTriggerController.state,
                         proModeStatus,
-                    ) { serviceState, isScreenOffChecked, recordTriggerState, proModeStatus ->
+                        forceProMode,
+                    ) {
+                            serviceState,
+                            isScreenOffChecked,
+                            recordTriggerState,
+                            proModeStatus,
+                            forceProMode,
+                        ->
                         val areRequirementsMet = if (isScreenOffChecked) {
-                            serviceState == AccessibilityServiceState.ENABLED && proModeStatus == ProModeStatus.ENABLED
+                            serviceState == AccessibilityServiceState.ENABLED &&
+                                proModeStatus == ProModeStatus.ENABLED
                         } else {
                             serviceState == AccessibilityServiceState.ENABLED
                         }
 
                         TriggerSetupState.Gamepad.SimpleButtons(
-                            isAccessibilityServiceEnabled = serviceState == AccessibilityServiceState.ENABLED,
-                            isScreenOffChecked = isScreenOffChecked,
+                            isAccessibilityServiceEnabled =
+                            serviceState == AccessibilityServiceState.ENABLED,
+                            isUseProModeChecked = isScreenOffChecked,
                             proModeStatus = proModeStatus,
                             areRequirementsMet = areRequirementsMet,
                             recordTriggerState = recordTriggerState,
+                            forceProMode = forceProMode,
                         )
                     }
                 }
@@ -223,35 +249,39 @@ class TriggerSetupDelegateImpl @Inject constructor(
 
     private fun buildSetupOtherTriggerFlow(): Flow<TriggerSetupState> {
         return combine(
-            controlAccessibilityServiceUseCase.serviceState,
+            accessibilityServiceState,
             isScreenOffChecked,
             recordTriggerController.state,
             proModeStatus,
-        ) { serviceState, isScreenOffChecked, recordTriggerState, proModeStatus ->
+            forceProMode,
+        ) { serviceState, isScreenOffChecked, recordTriggerState, proModeStatus, forceProMode ->
             val areRequirementsMet = if (isScreenOffChecked) {
-                serviceState == AccessibilityServiceState.ENABLED && proModeStatus == ProModeStatus.ENABLED
+                serviceState == AccessibilityServiceState.ENABLED &&
+                    proModeStatus == ProModeStatus.ENABLED
             } else {
                 serviceState == AccessibilityServiceState.ENABLED
             }
 
             TriggerSetupState.Other(
                 isAccessibilityServiceEnabled = serviceState == AccessibilityServiceState.ENABLED,
-                isScreenOffChecked = isScreenOffChecked,
+                isUseProModeChecked = isScreenOffChecked,
                 proModeStatus = proModeStatus,
                 areRequirementsMet = areRequirementsMet,
                 recordTriggerState = recordTriggerState,
+                forceProMode = forceProMode,
             )
         }
     }
 
     private fun buildSetupNotDetectedFlow(): Flow<TriggerSetupState> {
         return combine(
-            controlAccessibilityServiceUseCase.serviceState,
+            accessibilityServiceState,
             recordTriggerController.state,
             proModeStatus,
         ) { serviceState, recordTriggerState, proModeStatus ->
             val areRequirementsMet =
-                serviceState == AccessibilityServiceState.ENABLED && proModeStatus == ProModeStatus.ENABLED
+                serviceState == AccessibilityServiceState.ENABLED &&
+                    proModeStatus == ProModeStatus.ENABLED
 
             TriggerSetupState.NotDetected(
                 isAccessibilityServiceEnabled = serviceState == AccessibilityServiceState.ENABLED,
@@ -264,30 +294,33 @@ class TriggerSetupDelegateImpl @Inject constructor(
 
     private fun buildSetupKeyboardTriggerFlow(): Flow<TriggerSetupState> {
         return combine(
-            controlAccessibilityServiceUseCase.serviceState,
+            accessibilityServiceState,
             isScreenOffChecked,
             recordTriggerController.state,
             proModeStatus,
-        ) { serviceState, isScreenOffChecked, recordTriggerState, proModeStatus ->
+            forceProMode,
+        ) { serviceState, isScreenOffChecked, recordTriggerState, proModeStatus, forceProMode ->
             val areRequirementsMet = if (isScreenOffChecked) {
-                serviceState == AccessibilityServiceState.ENABLED && proModeStatus == ProModeStatus.ENABLED
+                serviceState == AccessibilityServiceState.ENABLED &&
+                    proModeStatus == ProModeStatus.ENABLED
             } else {
                 serviceState == AccessibilityServiceState.ENABLED
             }
 
             TriggerSetupState.Keyboard(
                 isAccessibilityServiceEnabled = serviceState == AccessibilityServiceState.ENABLED,
-                isScreenOffChecked = isScreenOffChecked,
+                isUseProModeChecked = isScreenOffChecked,
                 proModeStatus = proModeStatus,
                 areRequirementsMet = areRequirementsMet,
                 recordTriggerState = recordTriggerState,
+                forceProMode = forceProMode,
             )
         }
     }
 
     private fun buildSetupFingerprintGestureFlow(): Flow<TriggerSetupState> {
         return combine(
-            controlAccessibilityServiceUseCase.serviceState,
+            accessibilityServiceState,
             selectedFingerprintGestureType,
         ) { serviceState, gestureType ->
             val areRequirementsMet = serviceState == AccessibilityServiceState.ENABLED
@@ -331,12 +364,13 @@ class TriggerSetupDelegateImpl @Inject constructor(
 
     private fun buildSetupPowerTriggerFlow(): Flow<TriggerSetupState> {
         return combine(
-            controlAccessibilityServiceUseCase.serviceState,
+            accessibilityServiceState,
             recordTriggerController.state,
             proModeStatus,
         ) { serviceState, recordTriggerState, proModeStatus ->
             val areRequirementsMet =
-                serviceState == AccessibilityServiceState.ENABLED && proModeStatus == ProModeStatus.ENABLED
+                serviceState == AccessibilityServiceState.ENABLED &&
+                    proModeStatus == ProModeStatus.ENABLED
 
             val remapStatus = if (Build.VERSION.SDK_INT >= Constants.SYSTEM_BRIDGE_MIN_API) {
                 if (areRequirementsMet) {
@@ -360,12 +394,13 @@ class TriggerSetupDelegateImpl @Inject constructor(
 
     private fun buildSetupMouseTriggerFlow(): Flow<TriggerSetupState> {
         return combine(
-            controlAccessibilityServiceUseCase.serviceState,
+            accessibilityServiceState,
             recordTriggerController.state,
             proModeStatus,
         ) { serviceState, recordTriggerState, proModeStatus ->
             val areRequirementsMet =
-                serviceState == AccessibilityServiceState.ENABLED && proModeStatus == ProModeStatus.ENABLED
+                serviceState == AccessibilityServiceState.ENABLED &&
+                    proModeStatus == ProModeStatus.ENABLED
 
             val remapStatus = if (Build.VERSION.SDK_INT >= Constants.SYSTEM_BRIDGE_MIN_API) {
                 if (areRequirementsMet) {
@@ -389,21 +424,7 @@ class TriggerSetupDelegateImpl @Inject constructor(
 
     override fun onEnableAccessibilityServiceClick() {
         viewModelScope.launch {
-            val state = controlAccessibilityServiceUseCase.serviceState.first()
-
-            if (state == AccessibilityServiceState.DISABLED) {
-                ViewModelHelper.handleAccessibilityServiceStoppedDialog(
-                    resourceProvider = this@TriggerSetupDelegateImpl,
-                    dialogProvider = this@TriggerSetupDelegateImpl,
-                    startService = controlAccessibilityServiceUseCase::startService,
-                )
-            } else if (state == AccessibilityServiceState.CRASHED) {
-                ViewModelHelper.handleAccessibilityServiceCrashedDialog(
-                    resourceProvider = this@TriggerSetupDelegateImpl,
-                    dialogProvider = this@TriggerSetupDelegateImpl,
-                    restartService = controlAccessibilityServiceUseCase::restartService,
-                )
-            }
+            showEnableAccessibilityServiceDialog()
         }
     }
 
@@ -414,6 +435,10 @@ class TriggerSetupDelegateImpl @Inject constructor(
     }
 
     override fun onScreenOffTriggerSetupCheckedChange(isChecked: Boolean) {
+        isScreenOffChecked.value = isChecked
+    }
+
+    override fun onUseProModeCheckedChange(isChecked: Boolean) {
         isScreenOffChecked.value = isChecked
     }
 
@@ -433,12 +458,12 @@ class TriggerSetupDelegateImpl @Inject constructor(
         val setupState = triggerSetupState.value ?: return
 
         val enableEvdevRecording = when (setupState) {
-            is TriggerSetupState.Volume -> setupState.isScreenOffChecked
-            is TriggerSetupState.Keyboard -> setupState.isScreenOffChecked
+            is TriggerSetupState.Volume -> setupState.isUseProModeChecked
+            is TriggerSetupState.Keyboard -> setupState.isUseProModeChecked
             is TriggerSetupState.Power -> true
             is TriggerSetupState.FingerprintGesture -> false
             is TriggerSetupState.Mouse -> true
-            is TriggerSetupState.Other -> setupState.isScreenOffChecked
+            is TriggerSetupState.Other -> setupState.isUseProModeChecked
             is TriggerSetupState.Gamepad.Dpad -> false
             is TriggerSetupState.Gamepad.SimpleButtons -> setupState.isScreenOffChecked
             is TriggerSetupState.Mqtt -> false
@@ -457,9 +482,9 @@ class TriggerSetupDelegateImpl @Inject constructor(
 
                 is RecordTriggerState.Completed,
                 RecordTriggerState.Idle,
-                -> recordTriggerController.startRecording(
-                    enableEvdevRecording,
-                )
+                    -> recordTriggerController.startRecording(
+                        enableEvdevRecording,
+                    )
             }
 
             result.onSuccess {
@@ -467,7 +492,9 @@ class TriggerSetupDelegateImpl @Inject constructor(
             }
 
             // Show dialog if the accessibility service is disabled or crashed
-            handleServiceEventResult(result)
+            if (result is AccessibilityServiceError) {
+                showFixAccessibilityServiceDialog(result)
+            }
         }
     }
 
@@ -574,11 +601,12 @@ class TriggerSetupDelegateImpl @Inject constructor(
 
 interface TriggerSetupDelegate {
     val triggerSetupState: StateFlow<TriggerSetupState?>
-    fun showTriggerSetup(shortcut: TriggerSetupShortcut)
+    fun showTriggerSetup(shortcut: TriggerSetupShortcut, forceProMode: Boolean = false)
     fun onDismissTriggerSetup()
     fun onEnableAccessibilityServiceClick()
     fun onEnableProModeClick()
     fun onScreenOffTriggerSetupCheckedChange(isChecked: Boolean)
+    fun onUseProModeCheckedChange(isChecked: Boolean)
     fun onTriggerSetupRecordClick()
     fun onFingerprintGestureTypeSelected(type: FingerprintGestureType)
     fun onAddFingerprintGestureClick()

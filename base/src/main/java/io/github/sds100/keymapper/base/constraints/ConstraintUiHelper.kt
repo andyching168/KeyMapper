@@ -142,8 +142,12 @@ class ConstraintUiHelper(
         is ConstraintData.PhoneRinging -> getString(R.string.constraint_phone_ringing)
         is ConstraintData.Charging -> getString(R.string.constraint_charging)
         is ConstraintData.Discharging -> getString(R.string.constraint_discharging)
+        is ConstraintData.HingeClosed -> getString(R.string.constraint_hinge_closed_description)
+        is ConstraintData.HingeOpen -> getString(R.string.constraint_hinge_open_description)
         is ConstraintData.LockScreenShowing -> getString(R.string.constraint_lock_screen_showing)
-        is ConstraintData.LockScreenNotShowing -> getString(R.string.constraint_lock_screen_not_showing)
+        is ConstraintData.LockScreenNotShowing -> getString(
+            R.string.constraint_lock_screen_not_showing,
+        )
         is ConstraintData.Time -> getString(
             R.string.constraint_time_formatted,
             arrayOf(
@@ -169,8 +173,9 @@ class ConstraintUiHelper(
         else -> ConstraintUtils.getIcon(constraint.id)
     }
 
-    private fun getAppIconInfo(packageName: String): ComposeIconInfo? = getAppIcon(packageName).handle(
-        onSuccess = { ComposeIconInfo.Drawable(it) },
-        onError = { null },
-    )
+    private fun getAppIconInfo(packageName: String): ComposeIconInfo? =
+        getAppIcon(packageName).handle(
+            onSuccess = { ComposeIconInfo.Drawable(it) },
+            onError = { null },
+        )
 }

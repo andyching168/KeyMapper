@@ -12,15 +12,18 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.Info
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import io.github.sds100.keymapper.base.compose.KeyMapperTheme
@@ -30,12 +33,15 @@ fun TipCard(
     modifier: Modifier = Modifier,
     title: String,
     message: String,
+    buttonText: String? = null,
     isDismissable: Boolean = true,
+    color: Color = MaterialTheme.colorScheme.tertiary,
     onDismiss: () -> Unit = {},
+    onButtonClick: () -> Unit = {},
 ) {
     OutlinedCard(
         modifier = modifier,
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.tertiary),
+        border = BorderStroke(1.dp, color),
         elevation = CardDefaults.elevatedCardElevation(),
     ) {
         Box(
@@ -50,7 +56,7 @@ fun TipCard(
                     Icon(
                         imageVector = Icons.Rounded.Info,
                         contentDescription = null,
-                        tint = MaterialTheme.colorScheme.tertiary,
+                        tint = color,
                     )
 
                     Spacer(modifier = Modifier.width(8.dp))
@@ -70,7 +76,23 @@ fun TipCard(
                     style = MaterialTheme.typography.bodyMedium,
                 )
 
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(4.dp))
+
+                if (buttonText != null) {
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    TextButton(
+                        modifier = Modifier
+                            .padding(horizontal = 16.dp)
+                            .align(Alignment.End),
+                        onClick = onButtonClick,
+                        colors = ButtonDefaults.textButtonColors(contentColor = color),
+                    ) {
+                        Text(buttonText)
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(8.dp))
             }
 
             if (isDismissable) {
@@ -97,7 +119,11 @@ private fun TipCardPreview() {
     KeyMapperTheme {
         TipCard(
             title = "Tip Title",
-            message = "This is a helpful tip message that explains something important to the user. It can be multiple lines long and provides useful information.",
+            message = """
+                This is a helpful tip message that explains something important to the user. 
+                It can be multiple lines long and provides useful information.
+            """.trimIndent(),
+            buttonText = "Button",
         )
     }
 }

@@ -23,6 +23,7 @@ import io.github.sds100.keymapper.base.utils.ui.ResourceProvider
 import io.github.sds100.keymapper.common.utils.Constants
 import io.github.sds100.keymapper.common.utils.InputEventAction
 import io.github.sds100.keymapper.common.utils.KMError
+import io.github.sds100.keymapper.common.utils.KMError.SdkVersionTooLow
 import io.github.sds100.keymapper.common.utils.KMResult
 import io.github.sds100.keymapper.common.utils.Orientation
 import io.github.sds100.keymapper.common.utils.Success
@@ -35,13 +36,12 @@ import io.github.sds100.keymapper.common.utils.onSuccess
 import io.github.sds100.keymapper.common.utils.otherwise
 import io.github.sds100.keymapper.common.utils.success
 import io.github.sds100.keymapper.common.utils.then
-import io.github.sds100.keymapper.common.utils.valueOrNull
 import io.github.sds100.keymapper.common.utils.withFlag
 import io.github.sds100.keymapper.data.Keys
 import io.github.sds100.keymapper.data.PreferenceDefaults
 import io.github.sds100.keymapper.data.repositories.PreferenceRepository
 import io.github.sds100.keymapper.sysbridge.manager.SystemBridgeConnectionManager
-import io.github.sds100.keymapper.sysbridge.manager.SystemBridgeConnectionState
+import io.github.sds100.keymapper.sysbridge.manager.isConnected
 import io.github.sds100.keymapper.system.airplanemode.AirplaneModeAdapter
 import io.github.sds100.keymapper.system.apps.AppShortcutAdapter
 import io.github.sds100.keymapper.system.apps.PackageManagerAdapter
@@ -71,13 +71,22 @@ import io.github.sds100.keymapper.system.url.OpenUrlAdapter
 import io.github.sds100.keymapper.system.volume.RingerMode
 import io.github.sds100.keymapper.system.volume.VolumeAdapter
 import io.github.sds100.keymapper.system.volume.VolumeStream
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withTimeoutOrNull
 import timber.log.Timber
 
 class PerformActionsUseCaseImpl @AssistedInject constructor(
+    @Assisted
+    private val coroutineScope: CoroutineScope,
     @Assisted
     private val service: IAccessibilityService,
     private val inputMethodAdapter: InputMethodAdapter,
@@ -87,6 +96,7 @@ class PerformActionsUseCaseImpl @AssistedInject constructor(
     private val shell: ShellAdapter,
     private val intentAdapter: IntentAdapter,
     private val getActionErrorUseCase: GetActionErrorUseCase,
+    private val executeShellCommandUseCase: ExecuteShellCommandUseCase,
     private val keyMapperImeMessenger: ImeInputEventInjector,
     private val packageManagerAdapter: PackageManagerAdapter,
     private val appShortcutAdapter: AppShortcutAdapter,
@@ -115,6 +125,7 @@ class PerformActionsUseCaseImpl @AssistedInject constructor(
     @AssistedFactory
     interface Factory {
         fun create(
+            coroutineScope: CoroutineScope,
             accessibilityService: IAccessibilityService,
         ): PerformActionsUseCaseImpl
     }
@@ -125,6 +136,11 @@ class PerformActionsUseCaseImpl @AssistedInject constructor(
             inputEventHub,
         )
     }
+
+    private val injectKeyEventsWithSystemBridge: StateFlow<Boolean> =
+        settingsRepository.get(Keys.keyEventActionsUseSystemBridge)
+            .map { it ?: PreferenceDefaults.KEY_EVENT_ACTIONS_USE_SYSTEM_BRIDGE }
+            .stateIn(coroutineScope, SharingStarted.Eagerly, false)
 
     override suspend fun perform(
         action: ActionData,
@@ -176,15 +192,34 @@ class PerformActionsUseCaseImpl @AssistedInject constructor(
                 )
 
                 if (inputEventAction == InputEventAction.DOWN_UP) {
-                    result = inputEventHub.injectKeyEvent(model)
-                        .then { inputEventHub.injectKeyEvent(model.copy(action = KeyEvent.ACTION_UP)) }
+                    result = inputEventHub.injectKeyEvent(
+                        model,
+                        useSystemBridgeIfAvailable = injectKeyEventsWithSystemBridge.value,
+                    )
+                        .then {
+                            inputEventHub.injectKeyEvent(
+                                model.copy(action = KeyEvent.ACTION_UP),
+                                useSystemBridgeIfAvailable = injectKeyEventsWithSystemBridge.value,
+                            )
+                        }
                 } else {
-                    result = inputEventHub.injectKeyEvent(model)
+                    result = inputEventHub.injectKeyEvent(
+                        model,
+                        useSystemBridgeIfAvailable = injectKeyEventsWithSystemBridge.value,
+                    )
                 }
             }
 
             is ActionData.PhoneCall -> {
                 result = phoneAdapter.startCall(action.number)
+            }
+
+            is ActionData.SendSms -> {
+                result = phoneAdapter.sendSms(action.number, action.message)
+            }
+
+            is ActionData.ComposeSms -> {
+                result = phoneAdapter.composeSms(action.number, action.message)
             }
 
             is ActionData.DoNotDisturb.Enable -> {
@@ -276,45 +311,36 @@ class PerformActionsUseCaseImpl @AssistedInject constructor(
             }
 
             is ActionData.SwitchKeyboard -> {
-                result = switchImeInterface
-                    .switchIme(action.imeId)
-                    .onSuccess { imeId ->
-                        val imeInfo = inputMethodAdapter.getInfoById(action.imeId).valueOrNull()
-                            ?: return@onSuccess
+                switchImeInterface.switchIme(action.imeId)
 
-                        val message = resourceProvider.getString(
-                            R.string.toast_chose_keyboard,
-                            imeInfo.label,
-                        )
+                // See issue #1064. Wait for the input method to finish switching before returning.
+                val chosenIme = withTimeoutOrNull(2000) {
+                    inputMethodAdapter.chosenIme.filterNotNull().first { it.id == action.imeId }
+                }
 
-                        toastAdapter.show(message)
-                    }
+                if (chosenIme == null) {
+                    result = KMError.SwitchImeFailed
+                } else {
+                    result = Success(Unit)
+                }
             }
 
             is ActionData.Volume.Down -> {
-                result = audioAdapter.lowerVolume(showVolumeUi = action.showVolumeUi)
-            }
-
-            is ActionData.Volume.Up -> {
-                result = audioAdapter.raiseVolume(showVolumeUi = action.showVolumeUi)
-            }
-
-            is ActionData.Volume.Mute -> {
-                result = audioAdapter.muteVolume(showVolumeUi = action.showVolumeUi)
-            }
-
-            is ActionData.Volume.Stream.Decrease -> {
                 result = audioAdapter.lowerVolume(
                     stream = action.volumeStream,
                     showVolumeUi = action.showVolumeUi,
                 )
             }
 
-            is ActionData.Volume.Stream.Increase -> {
+            is ActionData.Volume.Up -> {
                 result = audioAdapter.raiseVolume(
                     stream = action.volumeStream,
                     showVolumeUi = action.showVolumeUi,
                 )
+            }
+
+            is ActionData.Volume.Mute -> {
+                result = audioAdapter.muteVolume(showVolumeUi = action.showVolumeUi)
             }
 
             is ActionData.Volume.ToggleMute -> {
@@ -323,6 +349,34 @@ class PerformActionsUseCaseImpl @AssistedInject constructor(
 
             is ActionData.Volume.UnMute -> {
                 result = audioAdapter.unmuteVolume(showVolumeUi = action.showVolumeUi)
+            }
+
+            is ActionData.Microphone.Mute -> {
+                result = audioAdapter.muteMicrophone().onSuccess {
+                    toastAdapter.show(resourceProvider.getString(R.string.toast_microphone_muted))
+                }
+            }
+
+            is ActionData.Microphone.Unmute -> {
+                result = audioAdapter.unmuteMicrophone().onSuccess {
+                    toastAdapter.show(resourceProvider.getString(R.string.toast_microphone_unmuted))
+                }
+            }
+
+            is ActionData.Microphone.Toggle -> {
+                result = if (audioAdapter.isMicrophoneMuted) {
+                    audioAdapter.unmuteMicrophone().onSuccess {
+                        toastAdapter.show(
+                            resourceProvider.getString(R.string.toast_microphone_unmuted),
+                        )
+                    }
+                } else {
+                    audioAdapter.muteMicrophone().onSuccess {
+                        toastAdapter.show(
+                            resourceProvider.getString(R.string.toast_microphone_muted),
+                        )
+                    }
+                }
             }
 
             is ActionData.TapScreen -> {
@@ -507,7 +561,7 @@ class PerformActionsUseCaseImpl @AssistedInject constructor(
                 val globalAction = AccessibilityService.GLOBAL_ACTION_NOTIFICATIONS
 
                 result = service.doGlobalAction(globalAction).otherwise {
-                    shell.execute("cmd statusbar expand-notifications")
+                    getShellAdapter(useRoot = false).execute("cmd statusbar expand-notifications")
                 }
             }
 
@@ -519,7 +573,9 @@ class PerformActionsUseCaseImpl @AssistedInject constructor(
                         val globalAction = AccessibilityService.GLOBAL_ACTION_NOTIFICATIONS
 
                         service.doGlobalAction(globalAction).otherwise {
-                            shell.execute("cmd statusbar expand-notifications")
+                            getShellAdapter(
+                                useRoot = false,
+                            ).execute("cmd statusbar expand-notifications")
                         }
                     }
             }
@@ -529,7 +585,7 @@ class PerformActionsUseCaseImpl @AssistedInject constructor(
 
                 result =
                     service.doGlobalAction(globalAction).otherwise {
-                        shell.execute("cmd statusbar expand-settings")
+                        getShellAdapter(useRoot = false).execute("cmd statusbar expand-settings")
                     }
             }
 
@@ -541,7 +597,9 @@ class PerformActionsUseCaseImpl @AssistedInject constructor(
                         val globalAction = AccessibilityService.GLOBAL_ACTION_QUICK_SETTINGS
 
                         service.doGlobalAction(globalAction).otherwise {
-                            shell.execute("cmd statusbar expand-settings")
+                            getShellAdapter(
+                                useRoot = false,
+                            ).execute("cmd statusbar expand-settings")
                         }
                     }
             }
@@ -606,11 +664,8 @@ class PerformActionsUseCaseImpl @AssistedInject constructor(
             }
 
             is ActionData.ToggleSplitScreen -> {
-                result = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                result =
                     service.doGlobalAction(AccessibilityService.GLOBAL_ACTION_TOGGLE_SPLIT_SCREEN)
-                } else {
-                    KMError.SdkVersionTooLow(minSdk = Build.VERSION_CODES.N)
-                }
             }
 
             is ActionData.GoLastApp -> {
@@ -643,22 +698,30 @@ class PerformActionsUseCaseImpl @AssistedInject constructor(
             is ActionData.MoveCursor -> {
                 result = service.performActionOnNode({ it.isFocused }) {
                     val actionType = when (action.direction) {
-                        ActionData.MoveCursor.Direction.START -> AccessibilityNodeInfo.ACTION_PREVIOUS_AT_MOVEMENT_GRANULARITY
-                        ActionData.MoveCursor.Direction.END -> AccessibilityNodeInfo.ACTION_NEXT_AT_MOVEMENT_GRANULARITY
+                        ActionData.MoveCursor.Direction.START ->
+                            AccessibilityNodeInfo.ACTION_PREVIOUS_AT_MOVEMENT_GRANULARITY
+                        ActionData.MoveCursor.Direction.END ->
+                            AccessibilityNodeInfo.ACTION_NEXT_AT_MOVEMENT_GRANULARITY
                     }
 
                     val granularity = when (action.moveType) {
-                        ActionData.MoveCursor.Type.CHAR -> AccessibilityNodeInfo.MOVEMENT_GRANULARITY_CHARACTER
-                        ActionData.MoveCursor.Type.WORD -> AccessibilityNodeInfo.MOVEMENT_GRANULARITY_WORD
-                        ActionData.MoveCursor.Type.LINE -> AccessibilityNodeInfo.MOVEMENT_GRANULARITY_LINE
-                        ActionData.MoveCursor.Type.PARAGRAPH -> AccessibilityNodeInfo.MOVEMENT_GRANULARITY_PARAGRAPH
-                        ActionData.MoveCursor.Type.PAGE -> AccessibilityNodeInfo.MOVEMENT_GRANULARITY_PAGE
+                        ActionData.MoveCursor.Type.CHAR ->
+                            AccessibilityNodeInfo.MOVEMENT_GRANULARITY_CHARACTER
+                        ActionData.MoveCursor.Type.WORD ->
+                            AccessibilityNodeInfo.MOVEMENT_GRANULARITY_WORD
+                        ActionData.MoveCursor.Type.LINE ->
+                            AccessibilityNodeInfo.MOVEMENT_GRANULARITY_LINE
+                        ActionData.MoveCursor.Type.PARAGRAPH ->
+                            AccessibilityNodeInfo.MOVEMENT_GRANULARITY_PARAGRAPH
+                        ActionData.MoveCursor.Type.PAGE ->
+                            AccessibilityNodeInfo.MOVEMENT_GRANULARITY_PAGE
                     }
 
                     AccessibilityNodeAction(
                         actionType,
                         mapOf(
-                            AccessibilityNodeInfo.ACTION_ARGUMENT_MOVEMENT_GRANULARITY_INT to granularity,
+                            AccessibilityNodeInfo.ACTION_ARGUMENT_MOVEMENT_GRANULARITY_INT to
+                                granularity,
                             AccessibilityNodeInfo.ACTION_ARGUMENT_EXTEND_SELECTION_BOOLEAN to false,
                         ),
                     )
@@ -719,10 +782,12 @@ class PerformActionsUseCaseImpl @AssistedInject constructor(
                                 ?: return@performActionOnNode null
 
                         val extras = mapOf(
-                            AccessibilityNodeInfo.ACTION_ARGUMENT_SELECTION_START_INT to wordBoundary.first,
+                            AccessibilityNodeInfo.ACTION_ARGUMENT_SELECTION_START_INT to
+                                wordBoundary.first,
 
                             // The index of the cursor is the index of the last char in the word + 1
-                            AccessibilityNodeInfo.ACTION_ARGUMENT_SELECTION_END_INT to wordBoundary.second + 1,
+                            AccessibilityNodeInfo.ACTION_ARGUMENT_SELECTION_END_INT to
+                                wordBoundary.second + 1,
                         )
 
                         AccessibilityNodeAction(
@@ -758,7 +823,11 @@ class PerformActionsUseCaseImpl @AssistedInject constructor(
                     val fileDate = FileUtils.createFileDate()
 
                     result =
-                        suAdapter.execute("mkdir -p $screenshotsFolder; screencap -p $screenshotsFolder/Screenshot_$fileDate.png")
+                        getShellAdapter(
+                            useRoot = true,
+                        ).execute(
+                            "mkdir -p $screenshotsFolder; screencap -p $screenshotsFolder/Screenshot_$fileDate.png",
+                        )
                             .onSuccess {
                                 // Wait 3 seconds so the message isn't shown in the screenshot.
                                 delay(3000)
@@ -789,7 +858,9 @@ class PerformActionsUseCaseImpl @AssistedInject constructor(
 
             is ActionData.LockDevice -> {
                 result = if (Build.VERSION.SDK_INT < Build.VERSION_CODES.P) {
-                    suAdapter.execute("input keyevent ${KeyEvent.KEYCODE_POWER}")
+                    getShellAdapter(
+                        useRoot = true,
+                    ).execute("input keyevent ${KeyEvent.KEYCODE_POWER}")
                 } else {
                     service.doGlobalAction(AccessibilityService.GLOBAL_ACTION_LOCK_SCREEN)
                 }
@@ -797,7 +868,7 @@ class PerformActionsUseCaseImpl @AssistedInject constructor(
 
             is ActionData.ScreenOnOff -> {
                 if (Build.VERSION.SDK_INT >= Constants.SYSTEM_BRIDGE_MIN_API &&
-                    systemBridgeConnectionManager.connectionState.value is SystemBridgeConnectionState.Connected
+                    systemBridgeConnectionManager.isConnected()
                 ) {
                     val model = InjectKeyEventModel(
                         keyCode = KeyEvent.KEYCODE_POWER,
@@ -807,10 +878,18 @@ class PerformActionsUseCaseImpl @AssistedInject constructor(
                         scanCode = Scancode.KEY_POWER,
                         source = InputDevice.SOURCE_UNKNOWN,
                     )
-                    result = inputEventHub.injectKeyEvent(model)
-                        .then { inputEventHub.injectKeyEvent(model.copy(action = KeyEvent.ACTION_UP)) }
+                    result = inputEventHub.injectKeyEvent(model, useSystemBridgeIfAvailable = true)
+                        .then {
+                            inputEventHub.injectKeyEvent(
+                                model.copy(action = KeyEvent.ACTION_UP),
+                                useSystemBridgeIfAvailable = true,
+                            )
+                        }
                 } else {
-                    result = suAdapter.execute("input keyevent ${KeyEvent.KEYCODE_POWER}")
+                    result =
+                        getShellAdapter(
+                            useRoot = true,
+                        ).execute("input keyevent ${KeyEvent.KEYCODE_POWER}")
                 }
             }
 
@@ -837,12 +916,16 @@ class PerformActionsUseCaseImpl @AssistedInject constructor(
 
             ActionData.DismissAllNotifications -> {
                 result =
-                    notificationReceiverAdapter.send(NotificationServiceEvent.DismissAllNotifications)
+                    notificationReceiverAdapter.send(
+                        NotificationServiceEvent.DismissAllNotifications,
+                    )
             }
 
             ActionData.DismissLastNotification -> {
                 result =
-                    notificationReceiverAdapter.send(NotificationServiceEvent.DismissLastNotification)
+                    notificationReceiverAdapter.send(
+                        NotificationServiceEvent.DismissLastNotification,
+                    )
             }
 
             ActionData.AnswerCall -> {
@@ -856,6 +939,7 @@ class PerformActionsUseCaseImpl @AssistedInject constructor(
             }
 
             ActionData.DeviceControls -> {
+                @Suppress("ktlint:standard:max-line-length")
                 result = intentAdapter.send(
                     IntentTarget.ACTIVITY,
                     uri = "#Intent;action=android.intent.action.MAIN;package=com.android.systemui;component=com.android.systemui/.controls.ui.ControlsActivity;end",
@@ -872,6 +956,14 @@ class PerformActionsUseCaseImpl @AssistedInject constructor(
                 )
             }
 
+            is ActionData.ShellCommand -> {
+                result = executeShellCommandUseCase.execute(
+                    command = action.command,
+                    executionMode = action.executionMode,
+                    timeoutMillis = action.timeoutMillis.toLong(),
+                )
+            }
+
             is ActionData.InteractUiElement -> {
                 if (service.activeWindowPackage.first() != action.packageName) {
                     result = KMError.UiElementNotFound
@@ -880,16 +972,60 @@ class PerformActionsUseCaseImpl @AssistedInject constructor(
                         findNode = { node ->
                             matchAccessibilityNode(node, action)
                         },
-                        performAction = { AccessibilityNodeAction(action = action.nodeAction.accessibilityActionId) },
+                        performAction = {
+                            AccessibilityNodeAction(
+                                action = action.nodeAction.accessibilityActionId,
+                            )
+                        },
                     ).otherwise { KMError.UiElementNotFound }
+                }
+            }
+
+            ActionData.ForceStopApp -> {
+                val packageName = service.activeWindowPackageNames
+                    .firstOrNull {
+                        !it.contains("io.github.sds100.keymapper") &&
+                            it != "com.android.systemui"
+                    }
+
+                if (packageName == null) {
+                    result = KMError.Exception(Exception("No foreground app found to kill"))
+                } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                    result = systemBridgeConnectionManager.run { systemBridge ->
+                        systemBridge.forceStopPackage(packageName)
+                    }
+                } else {
+                    result = SdkVersionTooLow(minSdk = Constants.SYSTEM_BRIDGE_MIN_API)
+                }
+            }
+
+            ActionData.ClearRecentApp -> {
+                val packageName = service.activeWindowPackageNames
+                    .firstOrNull { it != "com.android.systemui" }
+
+                if (packageName == null) {
+                    result =
+                        KMError.Exception(
+                            Exception("No foreground app found to clear from recents"),
+                        )
+                } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                    result = systemBridgeConnectionManager.run { systemBridge ->
+                        systemBridge.removeTasks(packageName)
+                    }
+                } else {
+                    result = SdkVersionTooLow(minSdk = Constants.SYSTEM_BRIDGE_MIN_API)
                 }
             }
         }
 
         when (result) {
-            is Success -> Timber.d("Performed action $action, input event type: $inputEventAction, key meta state: $keyMetaState")
+            is Success -> Timber.d(
+                "Performed action $action, input event type: $inputEventAction, key meta state: $keyMetaState",
+            )
             is KMError -> Timber.d(
-                "Failed to perform action $action, reason: ${result.getFullMessage(resourceProvider)}, action: $action, input event type: $inputEventAction, key meta state: $keyMetaState",
+                "Failed to perform action $action, reason: ${result.getFullMessage(
+                    resourceProvider,
+                )}, action: $action, input event type: $inputEventAction, key meta state: $keyMetaState",
             )
         }
 
@@ -967,7 +1103,17 @@ class PerformActionsUseCaseImpl @AssistedInject constructor(
             return service
                 .doGlobalAction(AccessibilityService.GLOBAL_ACTION_DISMISS_NOTIFICATION_SHADE)
         } else {
-            return shell.execute("cmd statusbar collapse")
+            return runBlocking {
+                getShellAdapter(useRoot = false).execute("cmd statusbar collapse")
+            }
+        }
+    }
+
+    private fun getShellAdapter(useRoot: Boolean): ShellAdapter {
+        return if (useRoot) {
+            suAdapter
+        } else {
+            shell
         }
     }
 

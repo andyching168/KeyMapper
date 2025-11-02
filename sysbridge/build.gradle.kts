@@ -6,11 +6,22 @@ plugins {
     alias(libs.plugins.google.devtools.ksp)
     alias(libs.plugins.dagger.hilt.android)
     alias(libs.plugins.kotlin.parcelize)
+    alias(libs.plugins.jlleitschuh.gradle.ktlint)
 }
 
 android {
     namespace = "io.github.sds100.keymapper.sysbridge"
     compileSdk = libs.versions.compile.sdk.get().toInt()
+
+    // Read NDK version from NDK_VERSION file, with fallback to gradle.properties
+    // The NDK version is stored in a file so the same value can be used across multiple modules.
+    val ndkVersionFile = project.file("NDK_VERSION")
+    val ndkVersionFromFile = if (ndkVersionFile.exists()) {
+        ndkVersionFile.readText().trim()
+    } else {
+        null
+    }
+    ndkVersion = ndkVersionFromFile!!
 
     defaultConfig {
         // Must be API 29 so that the binder-ndk library can be found.
@@ -29,7 +40,7 @@ android {
                     "-DANDROID_STL=c++_static",
                     "-DANDROID_SUPPORT_FLEXIBLE_PAGE_SIZES=ON",
                     "-DANDROID_WEAK_API_DEFS=ON",
-                    "-Daidl_src_dir=${aidlSrcDir.absolutePath}"
+                    "-Daidl_src_dir=${aidlSrcDir.absolutePath}",
                 )
             }
         }
@@ -39,7 +50,7 @@ android {
         release {
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
-                "proguard-rules.pro"
+                "proguard-rules.pro",
             )
         }
     }
@@ -127,7 +138,9 @@ val generateLibEvDevEventNames by tasks.registering(Exec::class) {
         ?: throw GradleException("No prebuilt toolchain directories found in $prebuiltDir")
 
     if (hostDirs.size != 1) {
-        throw GradleException("Expected exactly one prebuilt toolchain directory in $prebuiltDir, found ${hostDirs.size}")
+        throw GradleException(
+            "Expected exactly one prebuilt toolchain directory in $prebuiltDir, found ${hostDirs.size}",
+        )
     }
     val toolchainDir = hostDirs[0].absolutePath
 
@@ -196,9 +209,11 @@ val compileAidlNdk by tasks.registering(Exec::class) {
             "-o", cppOutDir.absolutePath,
             "-h", cppHeaderOutDir.absolutePath,
             "-I", importSearchPath,
-            aidlFile.absolutePath
+            aidlFile.absolutePath,
         )
     }
 
-    logger.lifecycle("AIDL NDK compilation finished. Check outputs in $cppOutDir and $cppHeaderOutDir")
+    logger.lifecycle(
+        "AIDL NDK compilation finished. Check outputs in $cppOutDir and $cppHeaderOutDir",
+    )
 }

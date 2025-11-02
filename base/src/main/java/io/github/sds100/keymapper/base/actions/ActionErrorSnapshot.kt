@@ -5,6 +5,7 @@ import io.github.sds100.keymapper.base.actions.sound.SoundsManager
 import io.github.sds100.keymapper.base.system.inputmethod.KeyMapperImeHelper
 import io.github.sds100.keymapper.base.system.inputmethod.SwitchImeInterface
 import io.github.sds100.keymapper.common.BuildConfigProvider
+import io.github.sds100.keymapper.common.models.ShellExecutionMode
 import io.github.sds100.keymapper.common.utils.Constants
 import io.github.sds100.keymapper.common.utils.KMError
 import io.github.sds100.keymapper.common.utils.firstBlocking
@@ -14,7 +15,7 @@ import io.github.sds100.keymapper.common.utils.valueOrNull
 import io.github.sds100.keymapper.data.Keys
 import io.github.sds100.keymapper.data.repositories.PreferenceRepository
 import io.github.sds100.keymapper.sysbridge.manager.SystemBridgeConnectionManager
-import io.github.sds100.keymapper.sysbridge.manager.SystemBridgeConnectionState
+import io.github.sds100.keymapper.sysbridge.manager.isConnected
 import io.github.sds100.keymapper.sysbridge.utils.SystemBridgeError
 import io.github.sds100.keymapper.system.SystemError
 import io.github.sds100.keymapper.system.apps.PackageManagerAdapter
@@ -66,8 +67,7 @@ class LazyActionErrorSnapshot(
 
     private val isSystemBridgeConnected: Boolean by lazy {
         if (buildConfigProvider.sdkInt >= Constants.SYSTEM_BRIDGE_MIN_API) {
-            @SuppressLint("NewApi")
-            systemBridgeConnectionManager.connectionState.value is SystemBridgeConnectionState.Connected
+            systemBridgeConnectionManager.isConnected()
         } else {
             false
         }
@@ -97,7 +97,11 @@ class LazyActionErrorSnapshot(
             var error = getError(action)
 
             val isImeNotChosenError =
-                error == KMError.NoCompatibleImeChosen || (error is KMError.KeyEventActionError && error.baseError == KMError.NoCompatibleImeChosen)
+                error == KMError.NoCompatibleImeChosen ||
+                    (
+                        error is KMError.KeyEventActionError &&
+                            error.baseError == KMError.NoCompatibleImeChosen
+                        )
 
             if (isImeNotChosenError && currentImeFromActions != null) {
                 val isCurrentImeCompatible =
@@ -124,7 +128,10 @@ class LazyActionErrorSnapshot(
             return isSupportedError
         }
 
-        if (buildConfigProvider.sdkInt >= Constants.SYSTEM_BRIDGE_MIN_API && action is ActionData.InputKeyEvent && keyEventActionsUseSystemBridge) {
+        if (buildConfigProvider.sdkInt >= Constants.SYSTEM_BRIDGE_MIN_API &&
+            action is ActionData.InputKeyEvent &&
+            keyEventActionsUseSystemBridge
+        ) {
             if (!isSystemBridgeConnected) {
                 return KMError.KeyEventActionError(SystemBridgeError.Disconnected)
             }
@@ -201,6 +208,28 @@ class LazyActionErrorSnapshot(
                 inputMethodAdapter.getInfoById(action.imeId).onFailure {
                     return it
                 }
+
+            is ActionData.ShellCommand -> {
+                return when (action.executionMode) {
+                    ShellExecutionMode.ROOT -> {
+                        if (!isPermissionGranted(Permission.ROOT)) {
+                            SystemError.PermissionDenied(Permission.ROOT)
+                        } else {
+                            null
+                        }
+                    }
+
+                    ShellExecutionMode.ADB -> {
+                        if (!isSystemBridgeConnected) {
+                            SystemBridgeError.Disconnected
+                        } else {
+                            null
+                        }
+                    }
+
+                    ShellExecutionMode.STANDARD -> null
+                }
+            }
 
             else -> {}
         }

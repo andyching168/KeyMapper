@@ -18,6 +18,8 @@ import io.github.sds100.keymapper.base.input.InputEventHub
 import io.github.sds100.keymapper.base.input.InputEventHubImpl
 import io.github.sds100.keymapper.base.keymaps.ConfigKeyMapState
 import io.github.sds100.keymapper.base.keymaps.ConfigKeyMapStateImpl
+import io.github.sds100.keymapper.base.keymaps.EnableKeyMapsUseCase
+import io.github.sds100.keymapper.base.keymaps.EnableKeyMapsUseCaseImpl
 import io.github.sds100.keymapper.base.keymaps.FingerprintGesturesSupportedUseCase
 import io.github.sds100.keymapper.base.keymaps.FingerprintGesturesSupportedUseCaseImpl
 import io.github.sds100.keymapper.base.keymaps.GetDefaultKeyMapOptionsUseCase
@@ -26,6 +28,8 @@ import io.github.sds100.keymapper.base.keymaps.PauseKeyMapsUseCase
 import io.github.sds100.keymapper.base.keymaps.PauseKeyMapsUseCaseImpl
 import io.github.sds100.keymapper.base.onboarding.OnboardingUseCase
 import io.github.sds100.keymapper.base.onboarding.OnboardingUseCaseImpl
+import io.github.sds100.keymapper.base.onboarding.SetupAccessibilityServiceDelegate
+import io.github.sds100.keymapper.base.onboarding.SetupAccessibilityServiceDelegateImpl
 import io.github.sds100.keymapper.base.system.accessibility.AccessibilityServiceAdapterImpl
 import io.github.sds100.keymapper.base.system.accessibility.ControlAccessibilityServiceUseCase
 import io.github.sds100.keymapper.base.system.accessibility.ControlAccessibilityServiceUseCaseImpl
@@ -67,7 +71,9 @@ abstract class BaseSingletonHiltModule {
 
     @Singleton
     @Binds
-    abstract fun provideAccessibilityAdapter(impl: AccessibilityServiceAdapterImpl): AccessibilityServiceAdapter
+    abstract fun provideAccessibilityAdapter(
+        impl: AccessibilityServiceAdapterImpl,
+    ): AccessibilityServiceAdapter
 
     @Singleton
     @Binds
@@ -83,23 +89,33 @@ abstract class BaseSingletonHiltModule {
 
     @Binds
     @Singleton
-    abstract fun bindShowInputMethodPickerUseCase(impl: ShowInputMethodPickerUseCaseImpl): ShowInputMethodPickerUseCase
+    abstract fun bindShowInputMethodPickerUseCase(
+        impl: ShowInputMethodPickerUseCaseImpl,
+    ): ShowInputMethodPickerUseCase
 
     @Binds
     @Singleton
-    abstract fun bindControlAccessibilityServiceUseCase(impl: ControlAccessibilityServiceUseCaseImpl): ControlAccessibilityServiceUseCase
+    abstract fun bindControlAccessibilityServiceUseCase(
+        impl: ControlAccessibilityServiceUseCaseImpl,
+    ): ControlAccessibilityServiceUseCase
 
     @Binds
     @Singleton
-    abstract fun bindToggleCompatibleImeUseCase(impl: ToggleCompatibleImeUseCaseImpl): ToggleCompatibleImeUseCase
+    abstract fun bindToggleCompatibleImeUseCase(
+        impl: ToggleCompatibleImeUseCaseImpl,
+    ): ToggleCompatibleImeUseCase
 
     @Binds
     @Singleton
-    abstract fun bindInteractUiElementUseCase(impl: InteractUiElementController): InteractUiElementUseCase
+    abstract fun bindInteractUiElementUseCase(
+        impl: InteractUiElementController,
+    ): InteractUiElementUseCase
 
     @Binds
     @Singleton
-    abstract fun bindShowHideInputMethodUseCase(impl: ShowHideInputMethodUseCaseImpl): ShowHideInputMethodUseCase
+    abstract fun bindShowHideInputMethodUseCase(
+        impl: ShowHideInputMethodUseCaseImpl,
+    ): ShowHideInputMethodUseCase
 
     @Binds
     @Singleton
@@ -111,11 +127,15 @@ abstract class BaseSingletonHiltModule {
 
     @Binds
     @Singleton
-    abstract fun bindRecordTriggerUseCase(impl: RecordTriggerControllerImpl): RecordTriggerController
+    abstract fun bindRecordTriggerUseCase(
+        impl: RecordTriggerControllerImpl,
+    ): RecordTriggerController
 
     @Binds
     @Singleton
-    abstract fun bindFingerprintGesturesSupportedUseCase(impl: FingerprintGesturesSupportedUseCaseImpl): FingerprintGesturesSupportedUseCase
+    abstract fun bindFingerprintGesturesSupportedUseCase(
+        impl: FingerprintGesturesSupportedUseCaseImpl,
+    ): FingerprintGesturesSupportedUseCase
 
     @Binds
     @Singleton
@@ -123,11 +143,15 @@ abstract class BaseSingletonHiltModule {
 
     @Binds
     @Singleton
-    abstract fun bindGetConstraintErrorUseCase(impl: GetConstraintErrorUseCaseImpl): GetConstraintErrorUseCase
+    abstract fun bindGetConstraintErrorUseCase(
+        impl: GetConstraintErrorUseCaseImpl,
+    ): GetConstraintErrorUseCase
 
     @Binds
     @Singleton
-    abstract fun bindManageNotificationsUseCase(impl: ManageNotificationsUseCaseImpl): ManageNotificationsUseCase
+    abstract fun bindManageNotificationsUseCase(
+        impl: ManageNotificationsUseCaseImpl,
+    ): ManageNotificationsUseCase
 
     @Binds
     @Singleton
@@ -147,7 +171,9 @@ abstract class BaseSingletonHiltModule {
 
     @Binds
     @Singleton
-    abstract fun keyEventRelayServiceWrapper(impl: KeyEventRelayServiceWrapperImpl): KeyEventRelayServiceWrapper
+    abstract fun keyEventRelayServiceWrapper(
+        impl: KeyEventRelayServiceWrapperImpl,
+    ): KeyEventRelayServiceWrapper
 
     @Binds
     @Singleton
@@ -159,9 +185,21 @@ abstract class BaseSingletonHiltModule {
 
     @Binds
     @Singleton
-    abstract fun bindGetDefaultKeyMapOptionsUseCas(impl: GetDefaultKeyMapOptionsUseCaseImpl): GetDefaultKeyMapOptionsUseCase
+    abstract fun bindGetDefaultKeyMapOptionsUseCas(
+        impl: GetDefaultKeyMapOptionsUseCaseImpl,
+    ): GetDefaultKeyMapOptionsUseCase
 
     @Binds
     @Singleton
     abstract fun bindSwitchImeInterface(impl: SwitchImeAsyncImpl): SwitchImeInterface
+
+    @Binds
+    @Singleton
+    abstract fun bindEnableKeyMapsUseCase(impl: EnableKeyMapsUseCaseImpl): EnableKeyMapsUseCase
+
+    @Binds
+    @Singleton
+    abstract fun bindSetupAccessibilityServiceDelegate(
+        impl: SetupAccessibilityServiceDelegateImpl,
+    ): SetupAccessibilityServiceDelegate
 }

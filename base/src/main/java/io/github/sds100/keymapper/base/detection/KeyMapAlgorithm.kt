@@ -414,7 +414,9 @@ class KeyMapAlgorithm(
                                 if (otherIndex == 0) continue@otherTriggerLoop
 
                                 // make sure the overlap retains the order of the trigger
-                                if (lastMatchedIndex != null && lastMatchedIndex != otherIndex - 1) {
+                                if (lastMatchedIndex != null &&
+                                    lastMatchedIndex != otherIndex - 1
+                                ) {
                                     continue@otherTriggerLoop
                                 }
 
@@ -451,7 +453,9 @@ class KeyMapAlgorithm(
                         for ((otherKeyIndex, otherKey) in otherTrigger.keys.withIndex()) {
                             if (key.matchesWithOtherKey(otherKey)) {
                                 // make sure the overlap retains the order of the trigger
-                                if (lastMatchedIndex != null && lastMatchedIndex != otherKeyIndex - 1) {
+                                if (lastMatchedIndex != null &&
+                                    lastMatchedIndex != otherKeyIndex - 1
+                                ) {
                                     continue@otherTriggerLoop
                                 }
 
@@ -465,7 +469,9 @@ class KeyMapAlgorithm(
                             }
 
                             // if there were no matching keys in the other trigger then skip this trigger
-                            if (lastMatchedIndex == null && otherKeyIndex == otherTrigger.keys.lastIndex) {
+                            if (lastMatchedIndex == null &&
+                                otherKeyIndex == otherTrigger.keys.lastIndex
+                            ) {
                                 continue@otherTriggerLoop
                             }
                         }
@@ -498,7 +504,9 @@ class KeyMapAlgorithm(
                         for ((otherKeyIndex, otherKey) in otherTrigger.keys.withIndex()) {
                             if (otherKey.matchesWithOtherKey(key)) {
                                 // make sure the overlap retains the order of the trigger
-                                if (lastMatchedIndex != null && lastMatchedIndex != otherKeyIndex - 1) {
+                                if (lastMatchedIndex != null &&
+                                    lastMatchedIndex != otherKeyIndex - 1
+                                ) {
                                     continue@otherTriggerLoop
                                 }
 
@@ -512,7 +520,9 @@ class KeyMapAlgorithm(
                             }
 
                             // if there were no matching keys in the other trigger then skip this trigger
-                            if (lastMatchedIndex == null && otherKeyIndex == otherTrigger.keys.lastIndex) {
+                            if (lastMatchedIndex == null &&
+                                otherKeyIndex == otherTrigger.keys.lastIndex
+                            ) {
                                 continue@otherTriggerLoop
                             }
                         }
@@ -605,7 +615,9 @@ class KeyMapAlgorithm(
 
             val device = event.device
 
-            if ((device.isExternal && !detectExternalEvents) || (!device.isExternal && !detectInternalEvents)) {
+            if ((device.isExternal && !detectExternalEvents) ||
+                (!device.isExternal && !detectInternalEvents)
+            ) {
                 return false
             }
         }
@@ -628,7 +640,9 @@ class KeyMapAlgorithm(
 
             if (parallelTriggerEventsAwaitingRelease[triggerIndex][eventIndex]) {
                 metaStateFromKeyEvent =
-                    metaStateFromKeyEvent.minusFlag(KeyEventUtils.modifierKeycodeToMetaState(key.keyCode))
+                    metaStateFromKeyEvent.minusFlag(
+                        KeyEventUtils.modifierKeycodeToMetaState(key.keyCode),
+                    )
             }
         }
 
@@ -839,14 +853,24 @@ class KeyMapAlgorithm(
             val trigger = triggers[triggerIndex]
             val lastMatchedIndex = lastMatchedEventIndices[triggerIndex]
 
-            for (overlappingTriggerIndex in sequenceTriggersOverlappingParallelTriggers[triggerIndex]) {
-                if (lastMatchedEventIndices[overlappingTriggerIndex] == triggers[overlappingTriggerIndex].keys.lastIndex) {
+            for (
+            overlappingTriggerIndex in
+            sequenceTriggersOverlappingParallelTriggers[triggerIndex]
+            ) {
+                if (lastMatchedEventIndices[overlappingTriggerIndex] ==
+                    triggers[overlappingTriggerIndex].keys.lastIndex
+                ) {
                     continue@triggerLoop
                 }
             }
 
-            for (overlappingTriggerIndex in parallelTriggersOverlappingParallelTriggers[triggerIndex]) {
-                if (lastMatchedEventIndices[overlappingTriggerIndex] == triggers[overlappingTriggerIndex].keys.lastIndex) {
+            for (
+            overlappingTriggerIndex in
+            parallelTriggersOverlappingParallelTriggers[triggerIndex]
+            ) {
+                if (lastMatchedEventIndices[overlappingTriggerIndex] ==
+                    triggers[overlappingTriggerIndex].keys.lastIndex
+                ) {
                     continue@triggerLoop
                 }
             }
@@ -1188,7 +1212,10 @@ class KeyMapAlgorithm(
                 else -> event.withShortPress
             }
 
-            for (overlappingTriggerIndex in sequenceTriggersOverlappingSequenceTriggers[triggerIndex]) {
+            for (
+            overlappingTriggerIndex in
+            sequenceTriggersOverlappingSequenceTriggers[triggerIndex]
+            ) {
                 if (lastMatchedEventIndices[overlappingTriggerIndex] != -1) {
                     continue@triggerLoop
                 }
@@ -1297,9 +1324,13 @@ class KeyMapAlgorithm(
                         val actionKeys = triggerActions[triggerIndex]
                         for (actionKey in actionKeys) {
                             actionMap[actionKey]?.let { action ->
-                                if (action.data is ActionData.InputKeyEvent && isModifierKey(action.data.keyCode)) {
+                                if (action.data is ActionData.InputKeyEvent &&
+                                    isModifierKey(action.data.keyCode)
+                                ) {
                                     val actionMetaState =
-                                        KeyEventUtils.modifierKeycodeToMetaState(action.data.keyCode)
+                                        KeyEventUtils.modifierKeycodeToMetaState(
+                                            action.data.keyCode,
+                                        )
 
                                     metaStateFromActionsToRemove =
                                         metaStateFromActionsToRemove.withFlag(actionMetaState)
@@ -1334,7 +1365,10 @@ class KeyMapAlgorithm(
                     }
 
                     if (!imitateDownUpKeyEvent) {
-                        if (isSingleKeyTrigger && !successfulLongPressTrigger && !releasedSuccessfulTrigger) {
+                        if (isSingleKeyTrigger &&
+                            !successfulLongPressTrigger &&
+                            !releasedSuccessfulTrigger
+                        ) {
                             imitateDownUpKeyEvent = true
                         } else if (lastMatchedIndex > -1 &&
                             lastMatchedIndex < triggers[triggerIndex].keys.lastIndex &&
@@ -1361,7 +1395,9 @@ class KeyMapAlgorithm(
 
             // let actions know that the trigger has been released
             if (lastHeldDownEventIndex != triggers[triggerIndex].keys.lastIndex) {
-                parallelTriggerActionPerformers[triggerIndex]?.onReleased(metaStateFromKeyEvent + metaStateFromActions)
+                parallelTriggerActionPerformers[triggerIndex]?.onReleased(
+                    metaStateFromKeyEvent + metaStateFromActions,
+                )
             }
         }
 
@@ -1405,7 +1441,9 @@ class KeyMapAlgorithm(
             )
         }
 
-        if (detectedSequenceTriggerIndexes.isNotEmpty() || detectedParallelTriggerIndexes.isNotEmpty()) {
+        if (detectedSequenceTriggerIndexes.isNotEmpty() ||
+            detectedParallelTriggerIndexes.isNotEmpty()
+        ) {
             if (forceVibrate.value) {
                 useCase.vibrate(defaultVibrateDuration.value)
             } else {
@@ -1647,8 +1685,9 @@ class KeyMapAlgorithm(
         return detectedTriggerIndexes.isNotEmpty()
     }
 
-    private fun encodeActionList(actions: List<Action>): IntArray =
-        actions.map { getActionKey(it) }.toIntArray()
+    private fun encodeActionList(actions: List<Action>): IntArray = actions.map {
+        getActionKey(it)
+    }.toIntArray()
 
     /**
      * @return the key for the action in [actionMap]. Returns -1 if the [action] can't be found.
@@ -1759,7 +1798,10 @@ class KeyMapAlgorithm(
             return when (this.device) {
                 KeyEventTriggerDevice.Any -> codeMatches && this.clickType == event.clickType
                 is KeyEventTriggerDevice.External ->
-                    event.isExternal && codeMatches && event.descriptor == this.device.descriptor && this.clickType == event.clickType
+                    event.isExternal &&
+                        codeMatches &&
+                        event.descriptor == this.device.descriptor &&
+                        this.clickType == event.clickType
 
                 KeyEventTriggerDevice.Internal ->
                     !event.isExternal &&
@@ -1775,7 +1817,9 @@ class KeyMapAlgorithm(
 
             return codeMatches && this.clickType == event.clickType && this.device == event.device
         } else if (this is AssistantTriggerKey && event is AssistantEvent) {
-            return if (this.type == AssistantTriggerType.ANY || event.type == AssistantTriggerType.ANY) {
+            return if (this.type == AssistantTriggerType.ANY ||
+                event.type == AssistantTriggerType.ANY
+            ) {
                 this.clickType == event.clickType
             } else {
                 this.type == event.type && this.clickType == event.clickType
@@ -1840,7 +1884,9 @@ class KeyMapAlgorithm(
                 this.keyCode == otherKey.keyCode
             }
 
-            return codeMatches && this.clickType == otherKey.clickType && this.device == otherKey.device
+            return codeMatches &&
+                this.clickType == otherKey.clickType &&
+                this.device == otherKey.device
         } else if (this is AssistantTriggerKey && otherKey is AssistantTriggerKey) {
             return this.type == otherKey.type && this.clickType == otherKey.clickType
         } else if (this is FloatingButtonKey && otherKey is FloatingButtonKey) {
@@ -1895,7 +1941,7 @@ class KeyMapAlgorithm(
         KeyEvent.KEYCODE_SYM,
         KeyEvent.KEYCODE_NUM,
         KeyEvent.KEYCODE_FUNCTION,
-        -> true
+            -> true
 
         else -> false
     }

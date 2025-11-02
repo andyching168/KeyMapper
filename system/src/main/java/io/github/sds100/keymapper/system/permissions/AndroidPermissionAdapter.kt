@@ -20,7 +20,6 @@ import io.github.sds100.keymapper.common.BuildConfigProvider
 import io.github.sds100.keymapper.common.utils.Constants
 import io.github.sds100.keymapper.common.utils.KMError
 import io.github.sds100.keymapper.common.utils.KMResult
-import io.github.sds100.keymapper.common.utils.firstBlocking
 import io.github.sds100.keymapper.common.utils.getIdentifier
 import io.github.sds100.keymapper.common.utils.onFailure
 import io.github.sds100.keymapper.common.utils.onSuccess
@@ -29,12 +28,14 @@ import io.github.sds100.keymapper.common.utils.then
 import io.github.sds100.keymapper.data.Keys
 import io.github.sds100.keymapper.data.repositories.PreferenceRepository
 import io.github.sds100.keymapper.sysbridge.manager.SystemBridgeConnectionManager
-import io.github.sds100.keymapper.sysbridge.manager.SystemBridgeConnectionState
+import io.github.sds100.keymapper.sysbridge.manager.isConnected
 import io.github.sds100.keymapper.sysbridge.utils.SystemBridgeError
 import io.github.sds100.keymapper.system.DeviceAdmin
 import io.github.sds100.keymapper.system.notifications.NotificationReceiverAdapter
 import io.github.sds100.keymapper.system.root.SuAdapter
 import io.github.sds100.keymapper.system.shizuku.ShizukuAdapter
+import javax.inject.Inject
+import javax.inject.Singleton
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -48,13 +49,12 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import org.lsposed.hiddenapibypass.HiddenApiBypass
 import rikka.shizuku.Shizuku
 import rikka.shizuku.ShizukuBinderWrapper
 import rikka.shizuku.SystemServiceHelper
 import timber.log.Timber
-import javax.inject.Inject
-import javax.inject.Singleton
 
 @Singleton
 class AndroidPermissionAdapter @Inject constructor(
@@ -65,7 +65,7 @@ class AndroidPermissionAdapter @Inject constructor(
     private val preferenceRepository: PreferenceRepository,
     private val buildConfigProvider: BuildConfigProvider,
     private val systemBridgeConnectionManager: SystemBridgeConnectionManager,
-    private val shizukuAdapter: ShizukuAdapter
+    private val shizukuAdapter: ShizukuAdapter,
 ) : PermissionAdapter {
     companion object {
         const val REQUEST_CODE_SHIZUKU_PERMISSION = 1
@@ -152,7 +152,7 @@ class AndroidPermissionAdapter @Inject constructor(
 
         val isSystemBridgeConnected =
             Build.VERSION.SDK_INT >= Constants.SYSTEM_BRIDGE_MIN_API &&
-                systemBridgeConnectionManager.connectionState.firstBlocking() is SystemBridgeConnectionState.Connected
+                systemBridgeConnectionManager.isConnected()
 
         if (isSystemBridgeConnected) {
             result = systemBridgeConnectionManager.run { bridge ->
@@ -164,12 +164,15 @@ class AndroidPermissionAdapter @Inject constructor(
                     KMError.Exception(Exception("Failed to grant permission with system bridge"))
                 }
             }
-        } else if (shizukuAdapter.isStarted.value) {
+        } else if (shizukuAdapter.isStarted.value && isGranted(Permission.SHIZUKU)) {
             val userId = Process.myUserHandle()!!.getIdentifier()
 
             PermissionManagerApis.grantPermission(
-                shizukuPermissionManager, buildConfigProvider.packageName,
-                permissionName, deviceId, userId
+                shizukuPermissionManager,
+                buildConfigProvider.packageName,
+                permissionName,
+                deviceId,
+                userId,
             )
 
             if (ContextCompat.checkSelfPermission(ctx, permissionName) == PERMISSION_GRANTED) {
@@ -179,10 +182,11 @@ class AndroidPermissionAdapter @Inject constructor(
                     KMError.Exception(Exception("Failed to grant permission with Shizuku."))
             }
         } else if (isGranted(Permission.ROOT)) {
-            suAdapter.execute(
-                "pm grant ${buildConfigProvider.packageName} $permissionName",
-                block = true,
-            )
+            runBlocking {
+                suAdapter.execute(
+                    "pm grant ${buildConfigProvider.packageName} $permissionName",
+                )
+            }
 
             if (ContextCompat.checkSelfPermission(ctx, permissionName) == PERMISSION_GRANTED) {
                 result = success()
@@ -247,6 +251,12 @@ class AndroidPermissionAdapter @Inject constructor(
             ContextCompat.checkSelfPermission(
                 ctx,
                 Manifest.permission.CALL_PHONE,
+            ) == PERMISSION_GRANTED
+
+        Permission.SEND_SMS ->
+            ContextCompat.checkSelfPermission(
+                ctx,
+                Manifest.permission.SEND_SMS,
             ) == PERMISSION_GRANTED
 
         Permission.ROOT -> suAdapter.isRootGranted.value

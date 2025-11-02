@@ -20,10 +20,14 @@ import io.github.sds100.keymapper.data.repositories.PreferenceRepository
 import io.github.sds100.keymapper.sysbridge.IEvdevCallback
 import io.github.sds100.keymapper.sysbridge.manager.SystemBridgeConnectionManager
 import io.github.sds100.keymapper.sysbridge.manager.SystemBridgeConnectionState
+import io.github.sds100.keymapper.sysbridge.manager.isConnected
 import io.github.sds100.keymapper.system.inputevents.KMEvdevEvent
 import io.github.sds100.keymapper.system.inputevents.KMGamePadEvent
 import io.github.sds100.keymapper.system.inputevents.KMInputEvent
 import io.github.sds100.keymapper.system.inputevents.KMKeyEvent
+import java.util.concurrent.ConcurrentHashMap
+import javax.inject.Inject
+import javax.inject.Singleton
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.Channel
@@ -39,9 +43,6 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import timber.log.Timber
-import java.util.concurrent.ConcurrentHashMap
-import javax.inject.Inject
-import javax.inject.Singleton
 
 @Singleton
 class InputEventHubImpl @Inject constructor(
@@ -50,7 +51,8 @@ class InputEventHubImpl @Inject constructor(
     private val imeInputEventInjector: ImeInputEventInjector,
     private val preferenceRepository: PreferenceRepository,
     private val evdevHandlesCache: EvdevHandleCache,
-) : InputEventHub, IEvdevCallback.Stub() {
+) : IEvdevCallback.Stub(),
+    InputEventHub {
 
     companion object {
         const val INJECT_INPUT_EVENT_MODE_WAIT_FOR_FINISH = 2
@@ -101,13 +103,13 @@ class InputEventHubImpl @Inject constructor(
     }
 
     /**
-     * Starts a coroutine that processes key events from the queue in order on the IO thread.=
+     * Starts a coroutine that processes key events from the queue in order on the IO thread.
      **/
     private fun startKeyEventProcessingLoop() {
         coroutineScope.launch(Dispatchers.IO) {
             for (event in keyEventQueue) {
                 try {
-                    injectKeyEvent(event)
+                    injectKeyEvent(event, useSystemBridgeIfAvailable = true)
                 } catch (e: Exception) {
                     Timber.e(e, "Error processing key event: $event")
                 }
@@ -117,7 +119,7 @@ class InputEventHubImpl @Inject constructor(
 
     @RequiresApi(Constants.SYSTEM_BRIDGE_MIN_API)
     override fun isSystemBridgeConnected(): Boolean {
-        return systemBridgeConnManager.connectionState.firstBlocking() is SystemBridgeConnectionState.Connected
+        return systemBridgeConnManager.isConnected()
     }
 
     override fun onEvdevEventLoopStarted() {
@@ -210,11 +212,19 @@ class InputEventHubImpl @Inject constructor(
             is KMKeyEvent -> {
                 when (event.action) {
                     KeyEvent.ACTION_DOWN -> {
-                        Timber.d("Key down ${KeyEvent.keyCodeToString(event.keyCode)}: keyCode=${event.keyCode}, scanCode=${event.scanCode}, deviceId=${event.deviceId}, metaState=${event.metaState}, source=${event.source}")
+                        Timber.d(
+                            "Key down ${KeyEvent.keyCodeToString(
+                                event.keyCode,
+                            )}: keyCode=${event.keyCode}, scanCode=${event.scanCode}, deviceId=${event.deviceId}, metaState=${event.metaState}, source=${event.source}",
+                        )
                     }
 
                     KeyEvent.ACTION_UP -> {
-                        Timber.d("Key up ${KeyEvent.keyCodeToString(event.keyCode)}: keyCode=${event.keyCode}, scanCode=${event.scanCode}, deviceId=${event.deviceId}, metaState=${event.metaState}, source=${event.source}")
+                        Timber.d(
+                            "Key up ${KeyEvent.keyCodeToString(
+                                event.keyCode,
+                            )}: keyCode=${event.keyCode}, scanCode=${event.scanCode}, deviceId=${event.deviceId}, metaState=${event.metaState}, source=${event.source}",
+                        )
                     }
 
                     else -> {
@@ -246,7 +256,9 @@ class InputEventHubImpl @Inject constructor(
 
     override fun setGrabbedEvdevDevices(clientId: String, devices: List<EvdevDeviceInfo>) {
         if (!clients.containsKey(clientId)) {
-            throw IllegalArgumentException("This client $clientId is not registered when trying to grab devices!")
+            throw IllegalArgumentException(
+                "This client $clientId is not registered when trying to grab devices!",
+            )
         }
 
         clients[clientId] = clients[clientId]!!.copy(grabbedEvdevDevices = devices.toSet())
@@ -257,7 +269,9 @@ class InputEventHubImpl @Inject constructor(
     @RequiresApi(Constants.SYSTEM_BRIDGE_MIN_API)
     override fun grabAllEvdevDevices(clientId: String) {
         if (!clients.containsKey(clientId)) {
-            throw IllegalArgumentException("This client $clientId is not registered when trying to grab devices!")
+            throw IllegalArgumentException(
+                "This client $clientId is not registered when trying to grab devices!",
+            )
         }
 
         val devices = evdevHandlesCache.devices.value.toSet()
@@ -287,7 +301,9 @@ class InputEventHubImpl @Inject constructor(
                     KMError.Exception(Exception("Failed to grab"))
                 }
             }
-            .onSuccess { result -> Timber.i("Grabbed evdev devices [${evdevDevices.joinToString { it.name }}]") }
+            .onSuccess { result ->
+                Timber.i("Grabbed evdev devices [${evdevDevices.joinToString { it.name }}]")
+            }
             .onFailure {
                 Timber.e("Failed to grab evdev devices.")
             }
@@ -312,11 +328,14 @@ class InputEventHubImpl @Inject constructor(
         }
     }
 
-    override suspend fun injectKeyEvent(event: InjectKeyEventModel): KMResult<Unit> {
+    override suspend fun injectKeyEvent(
+        event: InjectKeyEventModel,
+        useSystemBridgeIfAvailable: Boolean,
+    ): KMResult<Unit> {
         val isSysBridgeConnected = Build.VERSION.SDK_INT >= Constants.SYSTEM_BRIDGE_MIN_API &&
             systemBridgeConnManager.connectionState.value is SystemBridgeConnectionState.Connected
 
-        if (isSysBridgeConnected) {
+        if (isSysBridgeConnected && useSystemBridgeIfAvailable) {
             val androidKeyEvent = event.toAndroidKeyEvent(flags = KeyEvent.FLAG_FROM_SYSTEM)
 
             if (logInputEventsEnabled.value) {
@@ -392,9 +411,12 @@ interface InputEventHub {
      * Inject a key event. This may either use the key event relay service or the system
      * bridge depending on the permissions granted to Key Mapper.
      *
-     * Must be suspend so injecting to the systembridge can happen on another thread.
+     * Must be suspend so injecting to the system bridge can happen on another thread.
      */
-    suspend fun injectKeyEvent(event: InjectKeyEventModel): KMResult<Unit>
+    suspend fun injectKeyEvent(
+        event: InjectKeyEventModel,
+        useSystemBridgeIfAvailable: Boolean,
+    ): KMResult<Unit>
 
     /**
      * Some callers don't care about the result from injecting and it isn't critical

@@ -26,10 +26,13 @@ import io.github.sds100.keymapper.common.utils.KMResult
 import io.github.sds100.keymapper.common.utils.Success
 import io.github.sds100.keymapper.sysbridge.manager.SystemBridgeConnectionManager
 import io.github.sds100.keymapper.system.root.SuAdapter
+import javax.inject.Inject
+import javax.inject.Singleton
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import okhttp3.Headers
 import okhttp3.OkHttpClient
@@ -38,14 +41,12 @@ import okhttp3.RequestBody.Companion.toRequestBody
 import okio.IOException
 import okio.use
 import timber.log.Timber
-import javax.inject.Inject
-import javax.inject.Singleton
 
 @Singleton
 class AndroidNetworkAdapter @Inject constructor(
     @ApplicationContext private val context: Context,
     private val suAdapter: SuAdapter,
-    private val systemBridgeConnManager: SystemBridgeConnectionManager
+    private val systemBridgeConnManager: SystemBridgeConnectionManager,
 ) : NetworkAdapter {
     private val ctx = context.applicationContext
     private val wifiManager: WifiManager by lazy { ctx.getSystemService()!! }
@@ -100,7 +101,7 @@ class AndroidNetworkAdapter @Inject constructor(
 
             override fun onCapabilitiesChanged(
                 network: Network,
-                networkCapabilities: NetworkCapabilities
+                networkCapabilities: NetworkCapabilities,
             ) {
                 super.onCapabilitiesChanged(network, networkCapabilities)
 
@@ -180,7 +181,7 @@ class AndroidNetworkAdapter @Inject constructor(
         if (Build.VERSION.SDK_INT >= Constants.SYSTEM_BRIDGE_MIN_API) {
             return systemBridgeConnManager.run { bridge -> bridge.setDataEnabled(subId, true) }
         } else {
-            return suAdapter.execute("svc data enable")
+            return runBlocking { suAdapter.execute("svc data enable") }
         }
     }
 
@@ -194,7 +195,7 @@ class AndroidNetworkAdapter @Inject constructor(
         if (Build.VERSION.SDK_INT >= Constants.SYSTEM_BRIDGE_MIN_API) {
             return systemBridgeConnManager.run { bridge -> bridge.setDataEnabled(subId, false) }
         } else {
-            return suAdapter.execute("svc data disable")
+            return runBlocking { suAdapter.execute("svc data disable") }
         }
     }
 

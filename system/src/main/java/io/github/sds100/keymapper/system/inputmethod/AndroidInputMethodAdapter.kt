@@ -17,6 +17,8 @@ import io.github.sds100.keymapper.common.utils.then
 import io.github.sds100.keymapper.common.utils.valueOrNull
 import io.github.sds100.keymapper.system.JobSchedulerHelper
 import io.github.sds100.keymapper.system.root.SuAdapter
+import javax.inject.Inject
+import javax.inject.Singleton
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -24,9 +26,8 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.runBlocking
 import timber.log.Timber
-import javax.inject.Inject
-import javax.inject.Singleton
 
 @Singleton
 class AndroidInputMethodAdapter @Inject constructor(
@@ -63,7 +64,7 @@ class AndroidInputMethodAdapter @Inject constructor(
 
     override val inputMethods: MutableStateFlow<List<ImeInfo>> by lazy {
         MutableStateFlow(
-            getInputMethods()
+            getInputMethods(),
         )
     }
 
@@ -74,7 +75,7 @@ class AndroidInputMethodAdapter @Inject constructor(
                 if (it == null) {
                     Timber.e("No input method is chosen.")
                 } else {
-                    Timber.i("On input method chosen, chosen IME = ${chosenIme.value}")
+                    Timber.d("On input method chosen, chosen IME = ${chosenIme.value}")
                 }
             }
             .stateIn(coroutineScope, SharingStarted.Lazily, getChosenIme())
@@ -104,7 +105,7 @@ class AndroidInputMethodAdapter @Inject constructor(
             (Build.VERSION_CODES.O_MR1..Build.VERSION_CODES.P).contains(Build.VERSION.SDK_INT) -> {
                 val command =
                     "am broadcast -a com.android.server.InputMethodManagerService.SHOW_INPUT_METHOD_PICKER"
-                return suAdapter.execute(command)
+                return runBlocking { suAdapter.execute(command) }
             }
 
             else -> return KMError.CantShowImePickerInBackground
@@ -127,7 +128,9 @@ class AndroidInputMethodAdapter @Inject constructor(
      * :com.google.android.inputmethod.latin/com.android.inputmethod.latin.LatinIME;1891618174
      */
     private fun getImeHistory(): List<String> {
-        val ids = getSubtypeHistoryString(ctx)
+        val subtypeString = getSubtypeHistoryString(ctx) ?: return emptyList()
+
+        val ids = subtypeString
             .split(':')
             .map { it.split(';')[0] }
 
@@ -155,7 +158,7 @@ class AndroidInputMethodAdapter @Inject constructor(
         }
     }
 
-    private fun getSubtypeHistoryString(ctx: Context): String = Settings.Secure.getString(
+    private fun getSubtypeHistoryString(ctx: Context): String? = Settings.Secure.getString(
         ctx.contentResolver,
         SETTINGS_SECURE_SUBTYPE_HISTORY_KEY,
     )

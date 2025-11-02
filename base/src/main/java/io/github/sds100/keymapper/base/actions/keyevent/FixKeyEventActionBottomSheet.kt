@@ -46,7 +46,7 @@ import androidx.compose.ui.unit.dp
 import io.github.sds100.keymapper.base.R
 import io.github.sds100.keymapper.base.compose.KeyMapperTheme
 import io.github.sds100.keymapper.base.compose.LocalCustomColorsPalette
-import io.github.sds100.keymapper.base.trigger.ProModeStatus
+import io.github.sds100.keymapper.base.utils.ProModeStatus
 import io.github.sds100.keymapper.base.utils.ui.compose.AccessibilityServiceRequirementRow
 import io.github.sds100.keymapper.base.utils.ui.compose.CheckBoxText
 import io.github.sds100.keymapper.base.utils.ui.compose.HeaderText
@@ -156,7 +156,11 @@ fun FixKeyEventActionBottomSheet(
                         val annotatedText = buildAnnotatedString {
                             appendInlineContent("icon", "[icon]")
                             append(" ")
-                            append(stringResource(R.string.fix_key_event_action_pro_mode_text))
+                            append(stringResource(R.string.fix_key_event_action_pro_mode_text_1))
+                            appendLine()
+                            appendInlineContent("icon", "[icon]")
+                            append(" ")
+                            append(stringResource(R.string.fix_key_event_action_pro_mode_text_2))
                         }
                         val inlineContent = mapOf(
                             Pair(
@@ -165,7 +169,8 @@ fun FixKeyEventActionBottomSheet(
                                     Placeholder(
                                         width = MaterialTheme.typography.bodyLarge.fontSize,
                                         height = MaterialTheme.typography.bodyLarge.fontSize,
-                                        placeholderVerticalAlign = PlaceholderVerticalAlign.TextCenter,
+                                        placeholderVerticalAlign =
+                                        PlaceholderVerticalAlign.TextCenter,
                                     ),
                                 ) {
                                     Icon(

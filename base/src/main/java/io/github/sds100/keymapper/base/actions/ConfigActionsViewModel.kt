@@ -7,6 +7,10 @@ import io.github.sds100.keymapper.base.R
 import io.github.sds100.keymapper.base.actions.keyevent.FixKeyEventActionDelegate
 import io.github.sds100.keymapper.base.keymaps.KeyMap
 import io.github.sds100.keymapper.base.keymaps.ShortcutModel
+import io.github.sds100.keymapper.base.onboarding.OnboardingTapTarget
+import io.github.sds100.keymapper.base.onboarding.OnboardingTipDelegate
+import io.github.sds100.keymapper.base.onboarding.OnboardingUseCase
+import io.github.sds100.keymapper.base.onboarding.SetupAccessibilityServiceDelegate
 import io.github.sds100.keymapper.base.utils.getFullMessage
 import io.github.sds100.keymapper.base.utils.isFixable
 import io.github.sds100.keymapper.base.utils.navigation.NavDestination
@@ -17,6 +21,7 @@ import io.github.sds100.keymapper.base.utils.ui.LinkType
 import io.github.sds100.keymapper.base.utils.ui.ResourceProvider
 import io.github.sds100.keymapper.base.utils.ui.ViewModelHelper
 import io.github.sds100.keymapper.base.utils.ui.compose.ComposeIconInfo
+import io.github.sds100.keymapper.common.utils.AccessibilityServiceError
 import io.github.sds100.keymapper.common.utils.KMError
 import io.github.sds100.keymapper.common.utils.State
 import io.github.sds100.keymapper.common.utils.dataOrNull
@@ -24,6 +29,7 @@ import io.github.sds100.keymapper.common.utils.mapData
 import io.github.sds100.keymapper.common.utils.onFailure
 import io.github.sds100.keymapper.system.SystemError
 import io.github.sds100.keymapper.system.permissions.Permission
+import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -36,7 +42,6 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import javax.inject.Inject
 
 @HiltViewModel
 class ConfigActionsViewModel @Inject constructor(
@@ -44,16 +49,21 @@ class ConfigActionsViewModel @Inject constructor(
     private val createAction: CreateActionUseCase,
     private val testAction: TestActionUseCase,
     private val config: ConfigActionsUseCase,
+    private val onboardingUseCase: OnboardingUseCase,
+    setupAccessibilityServiceDelegate: SetupAccessibilityServiceDelegate,
     fixKeyEventActionDelegate: FixKeyEventActionDelegate,
+    onboardingTipDelegate: OnboardingTipDelegate,
     resourceProvider: ResourceProvider,
     navigationProvider: NavigationProvider,
     dialogProvider: DialogProvider,
 ) : ViewModel(),
     ActionOptionsBottomSheetCallback,
+    SetupAccessibilityServiceDelegate by setupAccessibilityServiceDelegate,
     ResourceProvider by resourceProvider,
     DialogProvider by dialogProvider,
     NavigationProvider by navigationProvider,
-    FixKeyEventActionDelegate by fixKeyEventActionDelegate {
+    FixKeyEventActionDelegate by fixKeyEventActionDelegate,
+    OnboardingTipDelegate by onboardingTipDelegate {
 
     val createActionDelegate =
         CreateActionDelegate(viewModelScope, createAction, this, this, this)
@@ -72,6 +82,8 @@ class ConfigActionsViewModel @Inject constructor(
         combine(config.keyMap, actionOptionsUid, transform = ::buildOptionsState)
             .stateIn(viewModelScope, SharingStarted.Lazily, null)
 
+    private var editedActionUid: String? = null
+
     private val actionErrorSnapshot: StateFlow<ActionErrorSnapshot?> =
         displayAction.actionErrorSnapshot.stateIn(viewModelScope, SharingStarted.Lazily, null)
 
@@ -89,7 +101,7 @@ class ConfigActionsViewModel @Inject constructor(
 
         viewModelScope.launch {
             createActionDelegate.actionResult.filterNotNull().collect { action ->
-                val actionUid = actionOptionsUid.value ?: return@collect
+                val actionUid = editedActionUid ?: return@collect
                 config.setActionData(actionUid, action)
                 actionOptionsUid.update { null }
             }
@@ -118,7 +130,9 @@ class ConfigActionsViewModel @Inject constructor(
                         ViewModelHelper.showDialogExplainingDndAccessBeingUnavailable(
                             resourceProvider = this@ConfigActionsViewModel,
                             dialogProvider = this@ConfigActionsViewModel,
-                            neverShowDndTriggerErrorAgain = { displayAction.neverShowDndTriggerError() },
+                            neverShowDndTriggerErrorAgain = {
+                                displayAction.neverShowDndTriggerError()
+                            },
                             fixError = { displayAction.fixError(error) },
                         )
                     }
@@ -146,6 +160,9 @@ class ConfigActionsViewModel @Inject constructor(
             val actionData = navigate("add_action", NavDestination.ChooseAction) ?: return@launch
 
             config.addAction(actionData)
+
+            // Never show the tap target to add an action again.
+            onboardingUseCase.completedTapTarget(OnboardingTapTarget.CHOOSE_ACTION)
         }
     }
 
@@ -171,6 +188,10 @@ class ConfigActionsViewModel @Inject constructor(
     override fun onEditClick() {
         val actionUid = actionOptionsUid.value ?: return
         viewModelScope.launch {
+            // Clear the bottom sheet so navigating back with predicted-back works
+            actionOptionsUid.update { null }
+            editedActionUid = actionUid
+
             val keyMap = config.keyMap.first().dataOrNull() ?: return@launch
 
             val oldAction = keyMap.actionList.find { it.uid == actionUid } ?: return@launch
@@ -181,6 +202,7 @@ class ConfigActionsViewModel @Inject constructor(
     override fun onReplaceClick() {
         val actionUid = actionOptionsUid.value ?: return
         viewModelScope.launch {
+            // Clear the bottom sheet so navigating back with predicted-back works
             actionOptionsUid.update { null }
 
             val newActionData =
@@ -239,30 +261,16 @@ class ConfigActionsViewModel @Inject constructor(
                 )
 
                 RepeatMode.LIMIT_REACHED -> config.setActionStopRepeatingWhenLimitReached(uid)
-                RepeatMode.TRIGGER_PRESSED_AGAIN -> config.setActionStopRepeatingWhenTriggerPressedAgain(
-                    uid,
-                )
+                RepeatMode.TRIGGER_PRESSED_AGAIN ->
+                    config.setActionStopRepeatingWhenTriggerPressedAgain(uid)
             }
         }
     }
 
     private suspend fun attemptTestAction(actionData: ActionData) {
         testAction.invoke(actionData).onFailure { error ->
-
-            if (error is KMError.AccessibilityServiceDisabled) {
-                ViewModelHelper.handleAccessibilityServiceStoppedDialog(
-                    resourceProvider = this,
-                    dialogProvider = this,
-                    startService = displayAction::startAccessibilityService,
-                )
-            }
-
-            if (error is KMError.AccessibilityServiceCrashed) {
-                ViewModelHelper.handleAccessibilityServiceCrashedDialog(
-                    resourceProvider = this,
-                    dialogProvider = this,
-                    restartService = displayAction::restartAccessibilityService,
-                )
+            if (error is AccessibilityServiceError) {
+                showFixAccessibilityServiceDialog(error)
             }
         }
     }
@@ -326,7 +334,9 @@ class ConfigActionsViewModel @Inject constructor(
                 }
 
                 action.delayBeforeNextAction.apply {
-                    if (keyMap.isDelayBeforeNextActionAllowed() && action.delayBeforeNextAction != null) {
+                    if (keyMap.isDelayBeforeNextActionAllowed() &&
+                        action.delayBeforeNextAction != null
+                    ) {
                         if (this@buildString.isNotBlank()) {
                             append(" $midDot ")
                         }
@@ -433,9 +443,8 @@ class ConfigActionsViewModel @Inject constructor(
 }
 
 sealed class ConfigActionsState {
-    data class Empty(
-        val shortcuts: Set<ShortcutModel<ActionData>> = emptySet(),
-    ) : ConfigActionsState()
+    data class Empty(val shortcuts: Set<ShortcutModel<ActionData>> = emptySet()) :
+        ConfigActionsState()
 
     data class Loaded(
         val actions: List<ActionListItemModel> = emptyList(),

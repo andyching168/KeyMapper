@@ -51,7 +51,9 @@ data class TriggerErrorSnapshot(
                 return TriggerError.FLOATING_BUTTONS_NOT_PURCHASED
             }
         }.onFailure { error ->
-            if ((key is AssistantTriggerKey || key is FloatingButtonKey) && error == PurchasingError.PurchasingProcessError.NetworkError) {
+            if ((key is AssistantTriggerKey || key is FloatingButtonKey) &&
+                error == PurchasingError.PurchasingProcessError.NetworkError
+            ) {
                 return TriggerError.PURCHASE_VERIFICATION_FAILED
             }
         }
@@ -76,7 +78,8 @@ data class TriggerErrorSnapshot(
 
         val containsDpadKey =
             key is KeyEventTriggerKey &&
-                KeyEventUtils.isDpadKeyCode(key.keyCode) && key.requiresIme
+                KeyEventUtils.isDpadKeyCode(key.keyCode) &&
+                key.requiresIme
 
         if (showDpadImeSetupError && !isKeyMapperImeChosen && containsDpadKey) {
             return TriggerError.DPAD_IME_NOT_SELECTED

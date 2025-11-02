@@ -64,7 +64,7 @@ class LazyConstraintErrorSnapshot(
 
             is ConstraintData.BtDeviceConnected,
             is ConstraintData.BtDeviceDisconnected,
-            -> {
+                -> {
                 if (!systemFeatureAdapter.hasSystemFeature(PackageManager.FEATURE_BLUETOOTH)) {
                     return KMError.SystemFeatureNotSupported(PackageManager.FEATURE_BLUETOOTH)
                 }
@@ -77,7 +77,7 @@ class LazyConstraintErrorSnapshot(
             is ConstraintData.OrientationCustom,
             ConstraintData.OrientationLandscape,
             ConstraintData.OrientationPortrait,
-            ->
+                ->
                 if (!isPermissionGranted(Permission.WRITE_SETTINGS)) {
                     return SystemError.PermissionDenied(Permission.WRITE_SETTINGS)
                 }
@@ -120,7 +120,10 @@ class LazyConstraintErrorSnapshot(
                 }
             }
 
-            is ConstraintData.InPhoneCall, is ConstraintData.PhoneRinging, is ConstraintData.NotInPhoneCall -> {
+            is ConstraintData.InPhoneCall,
+            is ConstraintData.PhoneRinging,
+            is ConstraintData.NotInPhoneCall,
+                -> {
                 if (!isPermissionGranted(Permission.READ_PHONE_STATE)) {
                     return SystemError.PermissionDenied(Permission.READ_PHONE_STATE)
                 }

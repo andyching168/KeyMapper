@@ -206,28 +206,36 @@ fun TriggerKeyOptionsBottomSheet(
                     modifier = Modifier.padding(horizontal = 8.dp),
                     text = stringResource(R.string.fingerprint_gesture_down),
                     isSelected = state.gestureType == FingerprintGestureType.SWIPE_DOWN,
-                    onSelected = { onSelectFingerprintGestureType(FingerprintGestureType.SWIPE_DOWN) },
+                    onSelected = {
+                        onSelectFingerprintGestureType(FingerprintGestureType.SWIPE_DOWN)
+                    },
                 )
 
                 RadioButtonText(
                     modifier = Modifier.padding(horizontal = 8.dp),
                     text = stringResource(R.string.fingerprint_gesture_up),
                     isSelected = state.gestureType == FingerprintGestureType.SWIPE_UP,
-                    onSelected = { onSelectFingerprintGestureType(FingerprintGestureType.SWIPE_UP) },
+                    onSelected = {
+                        onSelectFingerprintGestureType(FingerprintGestureType.SWIPE_UP)
+                    },
                 )
 
                 RadioButtonText(
                     modifier = Modifier.padding(horizontal = 8.dp),
                     text = stringResource(R.string.fingerprint_gesture_left),
                     isSelected = state.gestureType == FingerprintGestureType.SWIPE_LEFT,
-                    onSelected = { onSelectFingerprintGestureType(FingerprintGestureType.SWIPE_LEFT) },
+                    onSelected = {
+                        onSelectFingerprintGestureType(FingerprintGestureType.SWIPE_LEFT)
+                    },
                 )
 
                 RadioButtonText(
                     modifier = Modifier.padding(horizontal = 8.dp),
                     text = stringResource(R.string.fingerprint_gesture_right),
                     isSelected = state.gestureType == FingerprintGestureType.SWIPE_RIGHT,
-                    onSelected = { onSelectFingerprintGestureType(FingerprintGestureType.SWIPE_RIGHT) },
+                    onSelected = {
+                        onSelectFingerprintGestureType(FingerprintGestureType.SWIPE_RIGHT)
+                    },
                 )
             } else if (state is TriggerKeyOptionsState.Mqtt) {
                 Text(
@@ -287,7 +295,11 @@ fun TriggerKeyOptionsBottomSheet(
                         modifier = Modifier.weight(1f),
                         onClick = onEditFloatingButtonClick,
                     ) {
-                        Text(stringResource(R.string.floating_button_trigger_option_configure_button))
+                        Text(
+                            stringResource(
+                                R.string.floating_button_trigger_option_configure_button,
+                            ),
+                        )
                     }
 
                     Spacer(Modifier.width(16.dp))
@@ -335,9 +347,7 @@ fun TriggerKeyOptionsBottomSheet(
 }
 
 @Composable
-private fun HelpIconButton(
-    modifier: Modifier,
-) {
+private fun HelpIconButton(modifier: Modifier) {
     val uriHandler = LocalUriHandler.current
     val helpUrl = stringResource(R.string.url_trigger_key_options_guide)
     val ctx = LocalContext.current
@@ -434,7 +444,8 @@ private fun ScanCodeDetectionButtonRow(
 private fun isVerticalCompactLayout(): Boolean {
     val windowSizeClass = currentWindowAdaptiveInfo().windowSizeClass
 
-    return windowSizeClass.windowHeightSizeClass == WindowHeightSizeClass.COMPACT && windowSizeClass.windowWidthSizeClass == WindowWidthSizeClass.COMPACT
+    return windowSizeClass.windowHeightSizeClass == WindowHeightSizeClass.COMPACT &&
+        windowSizeClass.windowWidthSizeClass == WindowWidthSizeClass.COMPACT
 }
 
 @OptIn(ExperimentalMaterial3Api::class)

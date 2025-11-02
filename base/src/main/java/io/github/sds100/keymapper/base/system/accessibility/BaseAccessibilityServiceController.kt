@@ -79,6 +79,7 @@ abstract class BaseAccessibilityServiceController(
 
     private val performActionsUseCase = performActionsUseCaseFactory.create(
         accessibilityService = service,
+        coroutineScope = service.lifecycleScope,
     )
 
     private val detectKeyMapsUseCase = detectKeyMapsUseCaseFactory.create(
@@ -308,7 +309,8 @@ abstract class BaseAccessibilityServiceController(
                 enableAccessibilityVolumeStream = false
             } else {
                 enableAccessibilityVolumeStream = keyMaps.any { model ->
-                    model.keyMap.isEnabled && model.keyMap.actionList.any { it.data is ActionData.Sound }
+                    model.keyMap.isEnabled &&
+                        model.keyMap.actionList.any { it.data is ActionData.Sound }
                 }
             }
 
@@ -345,7 +347,9 @@ abstract class BaseAccessibilityServiceController(
                 serviceEventTypes.update { eventTypes ->
                     var newEventTypes = eventTypes
 
-                    if (!changeImeOnInputFocus && recordState == RecordAccessibilityNodeState.Idle) {
+                    if (!changeImeOnInputFocus &&
+                        recordState == RecordAccessibilityNodeState.Idle
+                    ) {
                         newEventTypes =
                             newEventTypes and (imeInputStartedEvents or recordNodeEvents).inv()
                     } else {
@@ -425,7 +429,8 @@ abstract class BaseAccessibilityServiceController(
 
     fun onKeyEvent(
         event: KMKeyEvent,
-        detectionSource: InputEventDetectionSource = InputEventDetectionSource.ACCESSIBILITY_SERVICE,
+        detectionSource: InputEventDetectionSource =
+            InputEventDetectionSource.ACCESSIBILITY_SERVICE,
     ): Boolean {
         return inputEventHub.onInputEvent(event, detectionSource)
     }
@@ -438,7 +443,12 @@ abstract class BaseAccessibilityServiceController(
         is sent. This is a restriction in Android. So send a fake DOWN key event as well
         before returning the UP key event.
          */
-        if (event.action == KeyEvent.ACTION_UP && (event.keyCode == KeyEvent.KEYCODE_VOLUME_UP || event.keyCode == KeyEvent.KEYCODE_VOLUME_DOWN)) {
+        if (event.action == KeyEvent.ACTION_UP &&
+            (
+                event.keyCode == KeyEvent.KEYCODE_VOLUME_UP ||
+                    event.keyCode == KeyEvent.KEYCODE_VOLUME_DOWN
+                )
+        ) {
             inputEventHub.onInputEvent(
                 event.copy(action = KeyEvent.ACTION_DOWN),
                 detectionSource = InputEventDetectionSource.INPUT_METHOD,
@@ -511,7 +521,9 @@ abstract class BaseAccessibilityServiceController(
 
             is TriggerKeyMapEvent -> triggerKeyMapFromIntent(event.uid)
 
-            is AccessibilityServiceEvent.EnableInputMethod -> if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            is AccessibilityServiceEvent.EnableInputMethod -> if (Build.VERSION.SDK_INT >=
+                Build.VERSION_CODES.TIRAMISU
+            ) {
                 service.enableIme(event.imeId)
             }
 

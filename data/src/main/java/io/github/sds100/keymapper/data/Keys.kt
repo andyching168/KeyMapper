@@ -55,10 +55,14 @@ object Keys {
         booleanPreferencesKey("key_shown_sequence_trigger_explanation_dialog")
     val shownTriggerConstraintsTip =
         booleanPreferencesKey("key_shown_trigger_constraints_tip")
-    val shownCapsLockTip =
-        booleanPreferencesKey("key_shown_caps_lock_tip")
+    val shownCapsLockProModeTip =
+        booleanPreferencesKey("key_shown_caps_lock_pro_mode_compatibility_tip")
+    val shownVolumeButtonsProModeTip =
+        booleanPreferencesKey("key_shown_volume_buttons_pro_mode_tip")
     val shownScreenPinningTip =
         booleanPreferencesKey("key_shown_screen_pinning_tip")
+    val shownRingerModeTip =
+        booleanPreferencesKey("key_shown_ringer_mode_tip")
     val lastInstalledVersionCodeHomeScreen =
         intPreferencesKey("last_installed_version_home_screen")
     val lastInstalledVersionCodeBackground =
@@ -110,8 +114,8 @@ object Keys {
 //    val shownTapTargetChooseConstraint =
 //        booleanPreferencesKey("key_shown_tap_target_choose_constraint")
 
-    val skipTapTargetTutorial =
-        booleanPreferencesKey("key_skip_tap_target_tutorial")
+//    val skipTapTargetTutorial =
+//        booleanPreferencesKey("key_skip_tap_target_tutorial")
 
     val isProModeWarningUnderstood =
         booleanPreferencesKey("key_is_pro_mode_warning_understood")
@@ -144,4 +148,11 @@ object Keys {
     val mqttUsername = stringPreferencesKey("key_mqtt_username")
     val mqttPassword = stringPreferencesKey("key_mqtt_password")
     val mqttEnabled = booleanPreferencesKey("key_mqtt_enabled")
+    val shellCommandScriptText = stringPreferencesKey("key_shell_command_script_text")
+
+    /**
+     * This is stored as true when PRO Mode has been auto started after upgrading
+     * to 4.0 on a rooted device.
+     */
+    val handledRootToProModeUpgrade = booleanPreferencesKey("key_handled_root_to_pro_mode_upgrade")
 }

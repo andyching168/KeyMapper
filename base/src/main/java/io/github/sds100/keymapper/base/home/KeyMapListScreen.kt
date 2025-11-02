@@ -128,7 +128,9 @@ private fun EmptyKeyMapList(modifier: Modifier = Modifier) {
         val shrug = stringResource(R.string.shrug)
         val text = stringResource(R.string.home_key_map_list_empty)
         Text(
-            modifier = Modifier.align(Alignment.Center),
+            modifier = Modifier
+                .align(Alignment.Center)
+                .padding(horizontal = 48.dp),
             text = buildAnnotatedString {
                 withStyle(MaterialTheme.typography.headlineLarge.toSpanStyle()) {
                     append(shrug)
@@ -411,10 +413,7 @@ private fun TriggerDescription(
 }
 
 @Composable
-private fun OptionsDescription(
-    modifier: Modifier = Modifier,
-    options: List<String>,
-) {
+private fun OptionsDescription(modifier: Modifier = Modifier, options: List<String>) {
     val dot = stringResource(R.string.middot)
     val text = buildAnnotatedString {
         pushStyle(
@@ -441,10 +440,7 @@ private fun OptionsDescription(
 }
 
 @Composable
-private fun ActionConstraintChip(
-    model: ComposeChipModel,
-    onFixClick: (KMError) -> Unit,
-) {
+private fun ActionConstraintChip(model: ComposeChipModel, onFixClick: (KMError) -> Unit) {
     when (model) {
         is ComposeChipModel.Normal -> {
             CompactChip(
@@ -483,16 +479,33 @@ private fun ActionConstraintChip(
 private fun getTriggerErrorMessage(error: TriggerError): String {
     return when (error) {
         TriggerError.DND_ACCESS_DENIED -> stringResource(R.string.trigger_error_dnd_access_denied)
-        TriggerError.CANT_DETECT_IN_PHONE_CALL -> stringResource(R.string.trigger_error_cant_detect_in_phone_call)
-        TriggerError.ASSISTANT_TRIGGER_NOT_PURCHASED -> stringResource(R.string.trigger_error_assistant_not_purchased)
-        TriggerError.DPAD_IME_NOT_SELECTED -> stringResource(R.string.trigger_error_dpad_ime_not_selected)
-        TriggerError.FLOATING_BUTTON_DELETED -> stringResource(R.string.trigger_error_floating_button_deleted)
-        TriggerError.FLOATING_BUTTONS_NOT_PURCHASED -> stringResource(R.string.trigger_error_floating_buttons_not_purchased)
-        TriggerError.PURCHASE_VERIFICATION_FAILED -> stringResource(R.string.trigger_error_product_verification_failed)
-        TriggerError.SYSTEM_BRIDGE_UNSUPPORTED -> stringResource(R.string.trigger_error_system_bridge_unsupported)
-        TriggerError.SYSTEM_BRIDGE_DISCONNECTED -> stringResource(R.string.trigger_error_system_bridge_disconnected)
-        TriggerError.EVDEV_DEVICE_NOT_FOUND -> stringResource(R.string.trigger_error_evdev_device_not_found)
-        TriggerError.MQTT_BROKER_DISCONNECTED -> stringResource(R.string.trigger_error_mqtt_broker_disconnected)
+        TriggerError.CANT_DETECT_IN_PHONE_CALL -> stringResource(
+            R.string.trigger_error_cant_detect_in_phone_call,
+        )
+        TriggerError.ASSISTANT_TRIGGER_NOT_PURCHASED -> stringResource(
+            R.string.trigger_error_assistant_not_purchased,
+        )
+        TriggerError.DPAD_IME_NOT_SELECTED -> stringResource(
+            R.string.trigger_error_dpad_ime_not_selected,
+        )
+        TriggerError.FLOATING_BUTTON_DELETED -> stringResource(
+            R.string.trigger_error_floating_button_deleted,
+        )
+        TriggerError.FLOATING_BUTTONS_NOT_PURCHASED -> stringResource(
+            R.string.trigger_error_floating_buttons_not_purchased,
+        )
+        TriggerError.PURCHASE_VERIFICATION_FAILED -> stringResource(
+            R.string.trigger_error_product_verification_failed,
+        )
+        TriggerError.SYSTEM_BRIDGE_UNSUPPORTED -> stringResource(
+            R.string.trigger_error_system_bridge_unsupported,
+        )
+        TriggerError.SYSTEM_BRIDGE_DISCONNECTED -> stringResource(
+            R.string.trigger_error_system_bridge_disconnected,
+        )
+        TriggerError.EVDEV_DEVICE_NOT_FOUND -> stringResource(
+            R.string.trigger_error_evdev_device_not_found,
+        )
     }
 }
 
@@ -510,7 +523,9 @@ private fun sampleList(): List<KeyMapListItemModel> {
                 actions = listOf(
                     ComposeChipModel.Normal(
                         id = "0",
-                        ComposeIconInfo.Drawable(drawable = context.drawable(R.drawable.ic_launcher_web)),
+                        ComposeIconInfo.Drawable(
+                            drawable = context.drawable(R.drawable.ic_launcher_web),
+                        ),
                         "Open Key Mapper",
                     ),
                     ComposeChipModel.Error(
@@ -533,7 +548,9 @@ private fun sampleList(): List<KeyMapListItemModel> {
                 constraints = listOf(
                     ComposeChipModel.Normal(
                         id = "0",
-                        ComposeIconInfo.Drawable(drawable = context.drawable(R.drawable.ic_launcher_web)),
+                        ComposeIconInfo.Drawable(
+                            drawable = context.drawable(R.drawable.ic_launcher_web),
+                        ),
                         "Key Mapper is not open",
                     ),
                     ComposeChipModel.Error(
@@ -556,7 +573,9 @@ private fun sampleList(): List<KeyMapListItemModel> {
                 actions = listOf(
                     ComposeChipModel.Normal(
                         id = "0",
-                        ComposeIconInfo.Drawable(drawable = context.drawable(R.drawable.ic_launcher_web)),
+                        ComposeIconInfo.Drawable(
+                            drawable = context.drawable(R.drawable.ic_launcher_web),
+                        ),
                         "Open Key Mapper",
                     ),
                 ),
@@ -564,7 +583,9 @@ private fun sampleList(): List<KeyMapListItemModel> {
                 constraints = listOf(
                     ComposeChipModel.Normal(
                         id = "0",
-                        ComposeIconInfo.Drawable(drawable = context.drawable(R.drawable.ic_launcher_web)),
+                        ComposeIconInfo.Drawable(
+                            drawable = context.drawable(R.drawable.ic_launcher_web),
+                        ),
                         "Key Mapper is not open",
                     ),
                 ),
@@ -585,7 +606,9 @@ private fun sampleList(): List<KeyMapListItemModel> {
                 actions = listOf(
                     ComposeChipModel.Normal(
                         id = "0",
-                        ComposeIconInfo.Drawable(drawable = context.drawable(R.drawable.ic_launcher_web)),
+                        ComposeIconInfo.Drawable(
+                            drawable = context.drawable(R.drawable.ic_launcher_web),
+                        ),
                         "Open Key Mapper",
                     ),
                 ),
@@ -593,7 +616,9 @@ private fun sampleList(): List<KeyMapListItemModel> {
                 constraints = listOf(
                     ComposeChipModel.Normal(
                         id = "0",
-                        ComposeIconInfo.Drawable(drawable = context.drawable(R.drawable.ic_launcher_web)),
+                        ComposeIconInfo.Drawable(
+                            drawable = context.drawable(R.drawable.ic_launcher_web),
+                        ),
                         "Key Mapper is not open",
                     ),
                 ),
@@ -611,7 +636,9 @@ private fun sampleList(): List<KeyMapListItemModel> {
                 actions = listOf(
                     ComposeChipModel.Normal(
                         id = "0",
-                        ComposeIconInfo.Drawable(drawable = context.drawable(R.drawable.ic_launcher_web)),
+                        ComposeIconInfo.Drawable(
+                            drawable = context.drawable(R.drawable.ic_launcher_web),
+                        ),
                         "Open Key Mapper",
                     ),
                 ),

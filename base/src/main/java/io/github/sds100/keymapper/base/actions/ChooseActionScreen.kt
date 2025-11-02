@@ -50,16 +50,20 @@ import io.github.sds100.keymapper.common.utils.State
 import kotlinx.coroutines.flow.update
 
 @Composable
-fun ChooseActionScreen(
-    modifier: Modifier = Modifier,
-    viewModel: ChooseActionViewModel,
-) {
+fun HandleActionBottomSheets(delegate: CreateActionDelegate) {
+    EnableFlashlightActionBottomSheet(delegate)
+    ChangeFlashlightStrengthActionBottomSheet(delegate)
+    HttpRequestBottomSheet(delegate)
+    SmsActionBottomSheet(delegate)
+    VolumeActionBottomSheet(delegate)
+}
+
+@Composable
+fun ChooseActionScreen(modifier: Modifier = Modifier, viewModel: ChooseActionViewModel) {
     val state by viewModel.groups.collectAsStateWithLifecycle()
     val query by viewModel.searchQuery.collectAsStateWithLifecycle()
 
-    EnableFlashlightActionBottomSheet(viewModel.createActionDelegate)
-    ChangeFlashlightStrengthActionBottomSheet(viewModel.createActionDelegate)
-    HttpRequestBottomSheet(viewModel.createActionDelegate)
+    HandleActionBottomSheets(viewModel.createActionDelegate)
 
     ChooseActionScreen(
         modifier = modifier,

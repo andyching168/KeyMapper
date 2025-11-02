@@ -1,6 +1,9 @@
 package io.github.sds100.keymapper.sysbridge.service
 
 import android.annotation.SuppressLint
+import android.app.ActivityTaskManagerApis
+import android.app.IActivityManager
+import android.app.IActivityTaskManager
 import android.bluetooth.IBluetoothManager
 import android.content.AttributionSource
 import android.content.Context
@@ -9,6 +12,7 @@ import android.content.pm.ApplicationInfo
 import android.content.pm.IPackageManager
 import android.content.pm.PackageManager
 import android.hardware.input.IInputManager
+import android.media.IAudioService
 import android.net.IConnectivityManager
 import android.net.wifi.IWifiManager
 import android.nfc.INfcAdapter
@@ -26,12 +30,15 @@ import android.util.Log
 import android.view.InputEvent
 import com.android.internal.telephony.ITelephony
 import io.github.sds100.keymapper.common.models.EvdevDeviceHandle
+import io.github.sds100.keymapper.common.models.ShellResult
 import io.github.sds100.keymapper.common.utils.UserHandleUtils
 import io.github.sds100.keymapper.sysbridge.IEvdevCallback
 import io.github.sds100.keymapper.sysbridge.ISystemBridge
 import io.github.sds100.keymapper.sysbridge.provider.BinderContainer
 import io.github.sds100.keymapper.sysbridge.provider.SystemBridgeBinderProvider
 import io.github.sds100.keymapper.sysbridge.utils.IContentProviderUtils
+import java.io.InterruptedIOException
+import kotlin.system.exitProcess
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -43,8 +50,6 @@ import rikka.hidden.compat.DeviceIdleControllerApis
 import rikka.hidden.compat.PackageManagerApis
 import rikka.hidden.compat.UserManagerApis
 import rikka.hidden.compat.adapter.ProcessObserverAdapter
-import kotlin.system.exitProcess
-
 
 @SuppressLint("LogNotTimber")
 internal class SystemBridge : ISystemBridge.Stub() {
@@ -57,7 +62,7 @@ internal class SystemBridge : ISystemBridge.Stub() {
         devicePath: String,
         type: Int,
         code: Int,
-        value: Int
+        value: Int,
     ): Boolean
 
     external fun getEvdevDevicesNative(): Array<EvdevDeviceHandle>
@@ -112,7 +117,7 @@ internal class SystemBridge : ISystemBridge.Stub() {
         override fun onForegroundActivitiesChanged(
             pid: Int,
             uid: Int,
-            foregroundActivities: Boolean
+            foregroundActivities: Boolean,
         ) {
             if (evdevCallback?.asBinder()?.pingBinder() != true) {
                 evdevCallbackDeathRecipient.binderDied()
@@ -169,6 +174,9 @@ internal class SystemBridge : ISystemBridge.Stub() {
     private val bluetoothManager: IBluetoothManager?
     private val nfcAdapter: INfcAdapter?
     private val connectivityManager: IConnectivityManager?
+    private val activityManager: IActivityManager
+    private val activityTaskManager: IActivityTaskManager
+    private val audioService: IAudioService?
 
     private val processPackageName: String = when (Process.myUid()) {
         Process.ROOT_UID -> "root"
@@ -189,6 +197,15 @@ internal class SystemBridge : ISystemBridge.Stub() {
         Log.i(TAG, "SystemBridge starting... Version code $versionCode")
 
         waitSystemService(Context.ACTIVITY_SERVICE)
+        activityManager = IActivityManager.Stub.asInterface(
+            ServiceManager.getService(Context.ACTIVITY_SERVICE),
+        )
+
+        waitSystemService("activity_task")
+        activityTaskManager = IActivityTaskManager.Stub.asInterface(
+            ServiceManager.getService("activity_task"),
+        )
+
         waitSystemService(Context.USER_SERVICE)
         waitSystemService(Context.APP_OPS_SERVICE)
 
@@ -237,7 +254,13 @@ internal class SystemBridge : ISystemBridge.Stub() {
 
         waitSystemService(Context.CONNECTIVITY_SERVICE)
         connectivityManager =
-            IConnectivityManager.Stub.asInterface(ServiceManager.getService(Context.CONNECTIVITY_SERVICE))
+            IConnectivityManager.Stub.asInterface(
+                ServiceManager.getService(Context.CONNECTIVITY_SERVICE),
+            )
+
+        waitSystemService(Context.AUDIO_SERVICE)
+        audioService =
+            IAudioService.Stub.asInterface(ServiceManager.getService(Context.AUDIO_SERVICE))
 
         val applicationInfo = getKeyMapperPackageInfo()
 
@@ -347,7 +370,6 @@ internal class SystemBridge : ISystemBridge.Stub() {
         for (path in devicePath) {
             Log.i(TAG, "Grabbing evdev device $path")
             grabEvdevDeviceNative(path)
-
         }
 
         return true
@@ -397,7 +419,7 @@ internal class SystemBridge : ISystemBridge.Stub() {
             systemBridgePackageName ?: return,
             permission ?: return,
             deviceId,
-            userId
+            userId,
         )
     }
 
@@ -422,7 +444,9 @@ internal class SystemBridge : ISystemBridge.Stub() {
                 systemBridgePackageName,
                 30 * 1000,
                 userId,
-                316,  /* PowerExemptionManager#REASON_SHELL */"shell"
+                // PowerExemptionManager#REASON_SHELL
+                316,
+                "shell",
             )
         } catch (tr: Throwable) {
             Log.e(TAG, tr.toString())
@@ -438,7 +462,7 @@ internal class SystemBridge : ISystemBridge.Stub() {
                 providerName,
                 userId,
                 token,
-                providerName
+                providerName,
             )
             if (provider == null) {
                 Log.e(TAG, "provider is null $providerName $userId")
@@ -453,7 +477,7 @@ internal class SystemBridge : ISystemBridge.Stub() {
             val extra = Bundle()
             extra.putParcelable(
                 SystemBridgeBinderProvider.EXTRA_BINDER,
-                BinderContainer(this)
+                BinderContainer(this),
             )
 
             val reply: Bundle? = IContentProviderUtils.callCompat(
@@ -462,7 +486,7 @@ internal class SystemBridge : ISystemBridge.Stub() {
                 providerName,
                 "sendBinder",
                 null,
-                extra
+                extra,
             )
             if (reply != null) {
                 Log.i(TAG, "Send binder to user app $systemBridgePackageName in user $userId")
@@ -472,14 +496,14 @@ internal class SystemBridge : ISystemBridge.Stub() {
             } else {
                 Log.w(
                     TAG,
-                    "Failed to send binder to user app $systemBridgePackageName in user $userId"
+                    "Failed to send binder to user app $systemBridgePackageName in user $userId",
                 )
             }
         } catch (tr: Throwable) {
             Log.e(
                 TAG,
                 "Failed to send binder to user app $systemBridgePackageName in user $userId",
-                tr
+                tr,
             )
         } finally {
             if (provider != null) {
@@ -494,24 +518,50 @@ internal class SystemBridge : ISystemBridge.Stub() {
         return false
     }
 
-    override fun executeCommand(command: String?): String {
-        command ?: throw IllegalArgumentException("command is null")
+    override fun executeCommand(command: String?, timeoutMillis: Long): ShellResult {
+        command ?: throw IllegalArgumentException("Command is null")
 
-        Log.i(TAG, "Executing command: $command")
+        val process = ProcessBuilder()
+            .command("sh", "-c", command)
+            // Redirect stderr to stdout
+            .redirectErrorStream(true)
+            .start()
 
-        val process = Runtime.getRuntime().exec(command)
+        var stdout = ""
 
-        val out = with(process.inputStream.bufferedReader()) {
-            readText()
+        val worker = Thread {
+            val stdoutReader = process.inputStream.bufferedReader()
+
+            try {
+                stdout = stdoutReader.readText()
+                process.waitFor()
+            } catch (_: InterruptedException) {
+            } catch (_: InterruptedIOException) {
+            } finally {
+                stdoutReader.close()
+            }
         }
 
-        val err = with(process.errorStream.bufferedReader()) {
-            readText()
+        worker.start()
+
+        try {
+            worker.join(timeoutMillis)
+
+            if (worker.isAlive) {
+                worker.interrupt()
+                process.destroy()
+                // Only some standard exceptions can be thrown across Binder. A TimeoutException
+                // is not one of them.
+                throw IllegalStateException("Timeout")
+            }
+        } catch (e: InterruptedException) {
+            worker.interrupt()
+            Thread.currentThread().interrupt()
         }
 
-        process.waitFor()
+        val exitCode = process.exitValue()
 
-        return "$out\n$err"
+        return ShellResult(stdout, exitCode)
     }
 
     override fun getVersionCode(): Int {
@@ -528,7 +578,7 @@ internal class SystemBridge : ISystemBridge.Stub() {
                 subId,
                 DATA_ENABLED_REASON_USER,
                 enable,
-                processPackageName
+                processPackageName,
             )
         } else {
             telephonyManager.setUserDataEnabled(subId, enable)
@@ -537,7 +587,9 @@ internal class SystemBridge : ISystemBridge.Stub() {
 
     override fun setBluetoothEnabled(enable: Boolean) {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) {
-            throw UnsupportedOperationException("Bluetooth enable/disable requires Android 12 or higher. Otherwise use the SDK's BluetoothAdapter which allows enable/disable.")
+            throw UnsupportedOperationException(
+                "Bluetooth enable/disable requires Android 12 or higher. Otherwise use the SDK's BluetoothAdapter which allows enable/disable.",
+            )
         }
 
         if (bluetoothManager == null) {
@@ -572,7 +624,7 @@ internal class SystemBridge : ISystemBridge.Stub() {
             NfcAdapterApis.disable(
                 adapter = nfcAdapter,
                 saveState = true,
-                packageName = processPackageName
+                packageName = processPackageName,
             )
         }
     }
@@ -583,5 +635,36 @@ internal class SystemBridge : ISystemBridge.Stub() {
         }
 
         connectivityManager.setAirplaneMode(enable)
+    }
+
+    override fun forceStopPackage(packageName: String?) {
+        val userId = UserHandleUtils.getCallingUserId()
+
+        activityManager.forceStopPackage(packageName, userId)
+    }
+
+    override fun removeTasks(packageName: String?) {
+        packageName ?: return
+
+        val tasks =
+            ActivityTaskManagerApis.getTasks(
+                activityTaskManager = activityTaskManager,
+                maxNum = 32,
+                filterOnlyVisibleRecents = false,
+                keepIntentExtra = false,
+                displayId = 0,
+            ) ?: return
+
+        tasks.filterNotNull()
+            .filter { it.baseActivity?.packageName == packageName }
+            .forEach { activityManager.removeTask(it.taskId) }
+    }
+
+    override fun setRingerMode(ringerMode: Int) {
+        if (audioService == null) {
+            throw UnsupportedOperationException("AudioService not supported")
+        }
+
+        audioService.setRingerModeInternal(ringerMode, processPackageName)
     }
 }

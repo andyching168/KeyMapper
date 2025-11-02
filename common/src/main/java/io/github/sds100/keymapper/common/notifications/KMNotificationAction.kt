@@ -28,10 +28,8 @@ sealed class KMNotificationAction {
         data object ShowKeyboard : Broadcast(IntentAction.SHOW_KEYBOARD)
     }
 
-    sealed class RemoteInput(
-        val key: String,
-        val intentAction: IntentAction,
-    ) : KMNotificationAction() {
+    sealed class RemoteInput(val key: String, val intentAction: IntentAction) :
+        KMNotificationAction() {
 
         data object PairingCode : RemoteInput(
             key = "pairing_code",
@@ -39,7 +37,7 @@ sealed class KMNotificationAction {
         )
     }
 
-    sealed class Activity() : KMNotificationAction() {
+    sealed class Activity : KMNotificationAction() {
         data object AccessibilitySettings : Activity()
         data class MainActivity(val action: String? = null) : Activity()
     }

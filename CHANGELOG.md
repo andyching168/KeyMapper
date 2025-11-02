@@ -1,6 +1,6 @@
 ## [4.0.0 Beta 1](https://github.com/sds100/KeyMapper/releases/tag/v4.0.0-beta.01)
 
-#### TO BE RELEASED
+#### 01 November 2025
 
 ## Added
 
@@ -12,6 +12,14 @@
 - Show tips for parallel and sequence triggers, and constraints in the trigger screen
 - #397 enable/disable all key maps in a group
 - #1773 Option to show floating buttons on top of keyboard or notification panel.
+- #1335 Intent API to enable/disable/toggle a key map.
+- #114 action to force stop app, and an action to clear an app from recents
+- #727 Actions to send SMS messages: "Send SMS" and "Compose SMS"
+- #1819 Explain how to enable the accessibility service restricted setting
+- #661 Action to execute shell commands.
+- #991 Consolidated volume and stream actions.
+- #1066 Action to mute/unmute microphone.
+- #985 Constraints for foldable hinge being open/closed.
 
 ## Removed
 
@@ -37,6 +45,8 @@
 - #1818 the Key Mapper GUI Keyboard is no longer mentioned in the app. It still works but PRO mode
   and the auto switching feature are the preferred way to work around the limitations of the Key
   Mapper keyboard.
+- Allow selecting notification and alarm sound and not just ringtones for Sound action.
+- #1064 wait for switch keyboard action to complete before doing next action.
 
 ## [3.2.1](https://github.com/sds100/KeyMapper/releases/tag/v3.2.1)
 

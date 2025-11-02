@@ -37,9 +37,6 @@ abstract class KMError : KMResult<Nothing>() {
     data object NoCompatibleImeEnabled : KMError()
     data object NoCompatibleImeChosen : KMError()
 
-    data object AccessibilityServiceDisabled : KMError()
-    data object AccessibilityServiceCrashed : KMError()
-
     data object CantShowImePickerInBackground : KMError()
     data object CantFindImeSettings : KMError()
     data object GestureStrokeCountTooHigh : KMError()
@@ -61,6 +58,9 @@ abstract class KMError : KMResult<Nothing>() {
     data object EnableImeFailed : KMError()
     data object NoAppToOpenUrl : KMError()
     data object NoAppToPhoneCall : KMError()
+    data object NoAppToSendSms : KMError()
+    data class SendSmsError(val resultCode: Int) : KMError()
+    data object KeyMapperSmsRateLimit : KMError()
 
     data class NotAFile(val uri: String) : KMError()
     data class NotADirectory(val uri: String) : KMError()
@@ -91,6 +91,7 @@ abstract class KMError : KMResult<Nothing>() {
 
     data object UiElementNotFound : KMError()
     data class KeyEventActionError(val baseError: KMError) : KMError()
+    data class ShellCommandTimeout(val timeoutMillis: Long, val stdout: String? = null) : KMError()
 }
 
 inline fun <T> KMResult<T>.onSuccess(f: (T) -> Unit): KMResult<T> {

@@ -140,6 +140,8 @@
     <string name="hint_create_text_action">Text to input</string>
     <string name="hint_create_url_action">Url to open</string>
     <string name="hint_create_phone_call_action">Phone number to call</string>
+    <string name="hint_create_sms_action_number">Phone number to send SMS</string>
+    <string name="hint_create_sms_action_message">Message to send</string>
 
     <string name="hint_intent_action">Action</string>
     <string name="hint_intent_categories">Categories</string>
@@ -200,6 +202,8 @@
     <string name="toast_no_sound_files">You have saved no sound files!</string>
     <string name="toast_granted_itself_write_secure_settings_with_shizuku">Key Mapper has used Shizuku to grant itself WRITE_SECURE_SETTINGS permission</string>
     <string name="toast_granted_itself_write_secure_settings_with_root">Key Mapper has used Root to grant itself WRITE_SECURE_SETTINGS permission</string>
+    <string name="toast_microphone_muted">Microphone muted</string>
+    <string name="toast_microphone_unmuted">Microphone unmuted</string>
     <!--  Toasts  -->
 
     <!-- Extra labels -->
@@ -285,6 +289,10 @@
 
     <string name="constraint_charging">Charging</string>
     <string name="constraint_discharging">Discharging</string>
+    <string name="constraint_hinge_closed">Hinge closed</string>
+    <string name="constraint_hinge_open">Hinge open</string>
+    <string name="constraint_hinge_closed_description">Hinge is closed</string>
+    <string name="constraint_hinge_open_description">Hinge is open</string>
 
     <string name="orientation_0">Portrait (0°)</string>
     <string name="orientation_90">Landscape (90°)</string>
@@ -308,7 +316,7 @@
     <!-- URLs -->
     <string name="url_play_store_listing" translatable="false">https://play.google.com/store/apps/details?id=io.github.sds100.keymapper</string>
     <string name="url_license" translatable="false">https://github.com/keymapperorg/KeyMapper/blob/master/LICENSE.md</string>
-    <string name="url_changelog" translatable="false">https://github.com/keymapperorg/KeyMapper/blob/master/CHANGELOG.md</string>
+    <string name="url_changelog" translatable="false">https://github.com/keymapperorg/KeyMapper/blob/develop/CHANGELOG.md</string>
     <string name="url_translate" translatable="false">https://docs.keymapper.club/contributing/#translating?utm_source=in_app</string>
     <string name="url_privacy_policy" translatable="false">https://github.com/keymapperorg/KeyMapper/blob/master/PRIVACY_POLICY.md</string>
     <string name="url_discord_server_invite" translatable="false">https://discord.gg/Suj6nyw</string>
@@ -326,6 +334,7 @@
     <string name="url_trigger_key_options_guide" translatable="false">https://docs.keymapper.club/redirects/trigger-key-options</string>
     <string name="url_android_11_bug_reset_id_work_around_setting_guide" translatable="false">https://docs.keymapper.club/redirects/android-11-device-id-bug-work-around</string>
     <string name="url_cant_find_accessibility_settings_issue" translatable="false">https://docs.keymapper.club/redirects/cant-find-accessibility-settings</string>
+    <string name="url_restricted_setting" translatable="false">https://docs.keymapper.club/redirects/restricted-settings</string>
     <string name="url_shizuku_setting_benefits" translatable="false">https://docs.keymapper.club/redirects/shizuku-benefits</string>
     <string name="url_settings_guide" translatable="false">https://docs.keymapper.club/redirects/settings</string>
     <string name="url_intent_set_flags_help" translatable="false">https://developer.android.com/reference/android/content/Intent#setFlags(int)</string>
@@ -339,6 +348,7 @@
     <string name="url_floating_button_config_guide" translatable="false">https://docs.keymapper.club/redirects/floating-button-config</string>
 
     <string name="url_github_create_issue_bug" translatable="false">https://github.com/keymapperorg/KeyMapper/issues/new/choose</string>
+    <string name="url_youtube_video" translatable="false">https://youtube.com/shorts/v7l2JYP14L0?feature=share</string>
     <!-- URLs -->
 
     <!-- Activity titles -->
@@ -452,6 +462,9 @@
     <string name="dialog_title_accessibility_service_explanation">Accessibility service must be enabled</string>
     <string name="dialog_message_accessibility_service_explanation">@string/accessibility_service_explanation</string>
 
+    <string name="dialog_restricted_setting_message">You may need to allow Restricted Settings.</string>
+    <string name="dialog_restricted_setting_link_text">Tap to read instructions.</string>
+
     <string name="dialog_title_fix_dnd_trigger_error">Grant Do Not Disturb access</string>
     <string name="dialog_message_fix_dnd_trigger_error">You will be taken to your device\'s settings page to manage which apps can modify the Do Not Disturb state. This is <b>not present on some devices</b> so tap don\'t show again if you do not see Key Mapper in the list.</string>
 
@@ -465,6 +478,7 @@
     <string name="dialog_message_request_notification_permission">Some actions and options need this permission to work. You can also get notified when there is important news about the app.</string>
 
     <string name="pos_done">Done</string>
+    <string name="pos_kill">Kill</string>
     <string name="pos_grant_write_secure_settings_guide">Guide</string>
     <string name="pos_start_service_with_adb_guide">Guide</string>
     <string name="pos_change_location">Change</string>
@@ -674,7 +688,7 @@
     <string name="flag_hold_down">Hold down</string>
     <string name="flag_hold_down_until_pressed_again">Hold down until pressed again</string>
     <string name="flag_dont_override_default_action">Do not remap</string>
-    <string name="flag_trigger_from_other_apps">Allow other apps to trigger this key map</string>
+    <string name="flag_trigger_from_other_apps">Allow other apps to control this key map with intents or shortcuts</string>
     <string name="flag_trigger_from_other_apps_copy_uid">Copy key map id</string>
     <string name="flag_detect_from_input_method">⌨</string>
     <!--flags-->
@@ -753,7 +767,7 @@
     <string name="error_system_feature_bluetooth_unsupported">Your device doesn\'t support Bluetooth.</string>
     <string name="error_system_feature_device_admin_unsupported">Your device doesn\'t support device policy enforcement.</string>
     <string name="error_system_feature_camera_flash_unsupported">Your device doesn\'t have a camera flash.</string>
-    <string name="error_system_feature_telephony_unsupported">Your device doesn\'t have any telephony features.</string>
+    <string name="error_system_feature_telephony_unsupported">Your device can not use telephony features. Is a SIM card inserted?</string>
     <string name="error_cant_find_ime_settings">Can\'t find the keyboard settings page!</string>
     <string name="error_need_to_enable_device_admin">Key Mapper needs to be a device administrator!</string>
     <string name="error_keymapper_doesnt_have_permission_app_shortcut">Key Mapper doesn\'t have permission to use that shortcut</string>
@@ -764,6 +778,7 @@
     <string name="error_cant_find_dnd_access_settings">Can\'t find the Do Not Disturb access permission settings!</string>
     <string name="error_need_write_secure_settings_permission">Key Mapper needs WRITE_SECURE_SETTINGS permission.</string>
     <string name="error_no_app_to_phone_call">There is no app that can start this phone call</string>
+    <string name="error_no_app_to_send_sms">There is no app that can send this SMS</string>
 
     <string name="error_camera_in_use">Camera is in use!</string>
     <string name="error_camera_disconnected">Camera disconnected!</string>
@@ -802,6 +817,17 @@
     <string name="error_denied_notification_listener_service_permission">Denied notification access permission!</string>
     <string name="error_invalid_intent_extra_value">Invalid!</string>
     <string name="error_denied_call_phone_permission">Denied permission to start phone calls!</string>
+    <string name="error_denied_send_sms_permission">Denied permission to send SMS messages!</string>
+    <string name="error_sms_generic_failure">Failed to send SMS. Is the number correct?</string>
+    <string name="error_sms_radio_off">Can\'t send SMS. Turn off airplane mode.</string>
+    <string name="error_sms_no_service">Can\'t send SMS. No cellular service.</string>
+    <string name="error_sms_limit_exceeded">SMS sending limit exceeded. Try again later.</string>
+    <string name="error_sms_network_reject">Network rejected the SMS.</string>
+    <string name="error_sms_no_memory">Can\'t send SMS. Device is out of memory.</string>
+    <string name="error_sms_invalid_format">Invalid SMS message format.</string>
+    <string name="error_sms_network_error">Can\'t send SMS. Network error.</string>
+    <string name="error_sms_blocked_during_emergency">Can\'t send SMS during emergency call.</string>
+    <string name="error_sms_no_sim">Can\'t send SMS. No SIM card detected.</string>
     <string name="error_backup_version_too_new">You will need to update Key Mapper to the latest version to use this backup.</string>
     <string name="error_voice_assistant_not_found">There is no voice assistant installed!</string>
     <string name="error_insufficient_permissions">Insufficient permissions</string>
@@ -845,7 +871,9 @@
     <string name="error_swipe_screen_must_be_ten_or_less_fingers">Must be %d or less!</string>
 
     <string name="error_ui_element_not_found">UI element not found!</string>
+    <string name="error_shell_command_timeout">Command timed out after %1$d seconds</string>
     <string name="error_system_bridge_disconnected">PRO Mode needs starting</string>
+    <string name="error_sms_rate_limit">Rate limit reached. You can only send once per second.</string>
     <!-- Error messages -->
 
     <!-- action labels -->
@@ -862,6 +890,9 @@
     <string name="action_volume_mute">Mute volume</string>
     <string name="action_toggle_mute">Toggle mute</string>
     <string name="action_volume_unmute">Unmute volume</string>
+    <string name="action_mute_microphone">Mute microphone</string>
+    <string name="action_unmute_microphone">Unmute microphone</string>
+    <string name="action_toggle_mute_microphone">Toggle mute microphone</string>
     <string name="action_volume_show_dialog">Show volume dialog</string>
     <string name="action_increase_stream">Increase stream</string>
     <string name="action_increase_stream_formatted">Increase %s stream</string>
@@ -1045,6 +1076,10 @@
     <string name="action_phone_call">Start phone call</string>
     <string name="action_answer_call">Answer phone call</string>
     <string name="action_end_call">End phone call</string>
+    <string name="action_send_sms">Send SMS</string>
+    <string name="action_send_sms_description">Send SMS: "%s"" to %s</string>
+    <string name="action_compose_sms">Compose SMS</string>
+    <string name="action_compose_sms_description">Compose SMS: "%s" to %s</string>
     <string name="action_play_sound">Play sound</string>
     <string name="action_dismiss_most_recent_notification">Dismiss most recent notification</string>
     <string name="action_dismiss_all_notifications">Dismiss all notifications</string>
@@ -1059,6 +1094,31 @@
     <string name="action_http_request_body_label">Request body (optional)</string>
     <string name="action_http_request_authorization_label">Authorization header (optional)</string>
     <string name="action_http_request_authorization_supporting_text">You must prepend \'Bearer\' if necessary</string>
+
+    <string name="action_shell_command">Shell command</string>
+    <string name="action_shell_command_title">Shell command action</string>
+    <string name="action_shell_command_command_label">Script</string>
+    <string name="action_shell_command_command_empty_error">Script cannot be empty!</string>
+    <string name="action_shell_command_use_root_label">Run as root</string>
+    <string name="action_shell_command_execution_mode_standard">Standard</string>
+    <string name="action_shell_command_execution_mode_root">Root</string>
+    <string name="action_shell_command_execution_mode_adb">ADB</string>
+    <string name="action_shell_command_execution_mode_label">Execution Mode</string>
+    <string name="action_shell_command_adb_streaming_warning">ADB mode does not support streaming output</string>
+    <string name="action_shell_command_setup_pro_mode">Setup PRO Mode</string>
+    <string name="action_shell_command_setup_pro_mode_unsupported">Setup PRO Mode (Unsupported)</string>
+    <string name="action_shell_command_tab_configuration">Configuration</string>
+    <string name="action_shell_command_tab_output">Output</string>
+    <string name="action_shell_command_no_output">No output yet. Click Test to run the command.</string>
+    <string name="action_shell_command_test_button">Test</string>
+    <string name="action_shell_command_output_label">Output</string>
+    <string name="action_shell_command_testing">Executing…</string>
+    <string name="action_shell_command_test_success">Success</string>
+    <string name="action_shell_command_test_failed">Failed</string>
+    <string name="action_shell_command_exit_code">Exit code: %1$d</string>
+    <string name="action_shell_command_description_with_root">Execute with root: %s</string>
+    <string name="action_shell_command_description_with_adb">Execute with ADB: %s</string>
+    <string name="action_shell_command_description_with_standard">Execute: %s</string>
 
     <string name="action_interact_ui_element_title">Interact with app element</string>
     <string name="action_interact_ui_element_description">Key Mapper can detect and interact with app elements like menus, tabs, buttons and checkboxes. You need to record yourself interacting with the app so that Key Mapper knows what you want to do.</string>
@@ -1098,6 +1158,9 @@
     <string name="action_interact_ui_element_view_id_label">View resource ID</string>
     <string name="action_interact_ui_element_unique_id_label">Unique ID</string>
     <string name="action_interact_ui_element_interaction_types_label">Interaction types</string>
+
+    <string name="action_force_stop_app">Force stop app</string>
+    <string name="action_clear_recent_app">Close and clear app from recents</string>
     <!-- action labels -->
 
     <!-- action category labels -->
@@ -1158,14 +1221,6 @@
 
     <string name="intent_flags_example">The flags for an Intent are stored as bit flags. These flags alter how the Intent is handled. If this is blank for an Activity Intent then Key Mapper will use FLAG_ACTIVITY_NEW_TASK by default. For much more information tap \'docs\' to see the Android developers documentation.</string>
     <!--  Intent action type strings  -->
-
-    <!--  Tap targets  -->
-    <string name="tap_target_skip_tutorial_button">Skip tutorial</string>
-    <string name="tap_target_create_key_map_title">Create your first key map!</string>
-    <string name="tap_target_create_key_map_message">A key map is a rule to tell your device what to do when a button is pressed.</string>
-    <string name="tap_target_choose_action_title">Choose an action</string>
-    <string name="tap_target_choose_action_message">An action is what should happen when you press the trigger.</string>
-    <!--  Tap targets  -->
 
     <!--  About  -->
     <string name="about_link_github">GitHub</string>
@@ -1303,12 +1358,19 @@
     <string name="floating_buttons_product_description">Floating buttons display over the apps you want. They work just like real buttons, and you can place, style, and map them however you like.</string>
     <string name="floating_button_text_key_map_list_item">Floating button %s (%s)</string>
     <string name="deleted_floating_button_text_key_map_list_item">Deleted floating button</string>
-    <string name="tip_caps_lock_title">Caps lock remapping</string>
-    <string name="tip_caps_lock_text">To remap Caps Lock, change your physical keyboard layout in settings to \'Caps Lock to camera\', then re-record this trigger.</string>
+    <string name="tip_caps_lock_pro_mode_title">Better Caps Lock compatibility</string>
+    <string name="tip_caps_lock_pro_mode_text">PRO mode provides better compatibility for Caps Lock remapping. Tap \'Use PRO mode\' and record it again.</string>
+    <string name="tip_caps_lock_pro_mode_button">Use PRO mode</string>
+    <string name="tip_volume_buttons_pro_mode_title">Screen off remapping?</string>
+    <string name="tip_volume_buttons_pro_mode_text">Use PRO mode if you want your trigger to work when the screen is off. Tap \'Use PRO mode\' and record it again.</string>
+    <string name="tip_volume_buttons_pro_mode_button">Use PRO mode</string>
     <string name="tip_screen_pinning_title">App pinning warning</string>
     <string name="tip_screen_pinning_text">Using the back button as a trigger may conflict with app pinning, causing a black screen on unlock. A reboot will fix it.</string>
     <string name="tip_ime_detection_title">Keyboard icon</string>
     <string name="tip_ime_detection_text">The ⌨ symbol means you must use the Key Mapper input method for this trigger to work due to an Android restriction.</string>
+    <string name="tip_ringer_mode_title">Ringer mode actions</string>
+    <string name="tip_ringer_mode_text">Consider using PRO mode for ringer mode actions to avoid conflicts with Do Not Disturb settings.</string>
+    <string name="tip_ringer_mode_button">Use PRO mode</string>
     <string name="trigger_constraints_tip_title">Limit to specific apps?</string>
     <string name="trigger_constraints_tip_text">Add constraints in the Constraints tab.</string>
     <string name="choose_floating_layout_title">Choose a layout</string>
@@ -1336,7 +1398,7 @@
     <string name="home_fab_new_key_map">New key map</string>
     <string name="home_fab_new_floating_layout">New layout</string>
     <string name="home_key_map_list_footer_text">Tap a key map to configure it.\nLong press for more options.</string>
-    <string name="home_key_map_list_empty">Create a key map!</string>
+    <string name="home_key_map_list_empty">Create a key map!\n\nA key map is a rule to tell your device what to do when a button is pressed.</string>
     <string name="home_floating_layouts_promo_title">Don’t have enough buttons?</string>
     <string name="home_floating_layouts_promo_subtitle">Make your own!</string>
     <string name="home_floating_layouts_promo_text">Floating buttons display over the apps you want. They work just like real buttons, and you can place, style, and map them however you like.</string>
@@ -1483,6 +1545,10 @@
     <string name="action_config_flashlight_brightness_unsupported_android_version">Requires Android 13 or newer.</string>
     <string name="action_config_flashlight_brightness_unsupported">This device does not let you change the brightness.</string>
     <string name="action_config_flashlight_brightness_factor">Brightness change</string>
+
+    <string name="action_config_volume_stream">Volume stream</string>
+    <string name="action_config_volume_stream_default">Default (system controlled)</string>
+    <string name="action_config_volume_options">Options</string>
 
     <string name="choose_action_group_unsupported">Unsupported</string>
 
@@ -1674,6 +1740,7 @@
     <string name="trigger_setup_status_remap_device_possible">You can remap this device</string>
     <string name="trigger_setup_status_feature_possible">You can use this feature</string>
     <string name="trigger_setup_screen_off_option">Remap when the screen is off</string>
+    <string name="trigger_setup_screen_off_option_keyboard">Remap when the screen is off</string>
     <string name="trigger_setup_options_title">Options</string>
     <string name="trigger_setup_requirements_title">Requirements</string>
     <string name="trigger_setup_not_detected_information">If your buttons still cannot be detected, please join our Discord server and let us know. We will do our best to help you remap your buttons.</string>
@@ -1707,7 +1774,8 @@
     <string name="fix_key_event_action_text">There are extra steps to use this action. Select which method you want to use:</string>
     <string name="fix_key_event_action_input_method_title">Key Mapper input method</string>
     <string name="fix_key_event_action_input_method_text">No on-screen keyboard</string>
-    <string name="fix_key_event_action_pro_mode_text">Can use your normal on-screen keyboard at all times</string>
+    <string name="fix_key_event_action_pro_mode_text_1">Can use your normal on-screen keyboard at all times</string>
+    <string name="fix_key_event_action_pro_mode_text_2">Better compatibility with apps and games</string>
     <string name="fix_key_event_action_enable_input_method_button">Enable Key Mapper input method</string>
     <string name="fix_key_event_action_use_input_method_button">Use Key Mapper input method</string>
     <string name="fix_key_event_action_auto_switch_ime_text">Automatically switch to normal on-screen keyboard when typing</string>
@@ -1742,6 +1810,16 @@
     <string name="settings_mqtt_title">MQTT Broker Settings</string>
     <string name="settings_mqtt_summary">Configure default MQTT broker connection</string>
     <!-- MQTT Settings -->
+    <string name="button_test_sms">Test SMS</string>
+    <string name="test_sms_result_ok">Sent successfully!</string>
+    <string name="warning_sms_charges">Sending SMS may incur carrier or roaming charges. Key Mapper developers are not liable for any costs.</string>
+    <string name="hint_shell_command_description">Description</string>
+    <string name="hint_shell_command_timeout">Timeout</string>
+
+    <!-- Floating buttons review card -->
+    <string name="floating_buttons_review_card_title">Are you enjoying floating buttons?</string>
+    <string name="floating_buttons_review_card_message">We would love to know! Please consider leaving a review on Google Play to help others discover this feature. ❤️</string>
+    <string name="floating_buttons_review_card_dismiss">Dismiss</string>
 
 </resources>
 

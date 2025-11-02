@@ -1,22 +1,25 @@
 package io.github.sds100.keymapper.base.trigger
 
 import io.github.sds100.keymapper.base.system.accessibility.FingerprintGestureType
+import io.github.sds100.keymapper.base.utils.ProModeStatus
 
 sealed class TriggerSetupState {
     data class Volume(
         val isAccessibilityServiceEnabled: Boolean,
-        val isScreenOffChecked: Boolean,
+        val isUseProModeChecked: Boolean,
         val proModeStatus: ProModeStatus,
         val areRequirementsMet: Boolean,
         val recordTriggerState: RecordTriggerState,
+        val forceProMode: Boolean = false,
     ) : TriggerSetupState()
 
     data class Keyboard(
         val isAccessibilityServiceEnabled: Boolean,
-        val isScreenOffChecked: Boolean,
+        val isUseProModeChecked: Boolean,
         val proModeStatus: ProModeStatus,
         val areRequirementsMet: Boolean,
         val recordTriggerState: RecordTriggerState,
+        val forceProMode: Boolean = false,
     ) : TriggerSetupState()
 
     data class Power(
@@ -37,10 +40,11 @@ sealed class TriggerSetupState {
 
     data class Other(
         val isAccessibilityServiceEnabled: Boolean,
-        val isScreenOffChecked: Boolean,
+        val isUseProModeChecked: Boolean,
         val proModeStatus: ProModeStatus,
         val areRequirementsMet: Boolean,
         val recordTriggerState: RecordTriggerState,
+        val forceProMode: Boolean = false,
     ) : TriggerSetupState()
 
     data class NotDetected(
@@ -50,7 +54,7 @@ sealed class TriggerSetupState {
         val recordTriggerState: RecordTriggerState,
     ) : TriggerSetupState()
 
-    sealed class Gamepad() : TriggerSetupState() {
+    sealed class Gamepad : TriggerSetupState() {
         abstract val isAccessibilityServiceEnabled: Boolean
         abstract val areRequirementsMet: Boolean
         abstract val recordTriggerState: RecordTriggerState
@@ -71,10 +75,11 @@ sealed class TriggerSetupState {
 
         data class SimpleButtons(
             override val isAccessibilityServiceEnabled: Boolean,
-            val isScreenOffChecked: Boolean,
+            val isUseProModeChecked: Boolean,
             val proModeStatus: ProModeStatus,
             override val areRequirementsMet: Boolean,
             override val recordTriggerState: RecordTriggerState,
+            val forceProMode: Boolean = false,
         ) : Gamepad()
     }
 

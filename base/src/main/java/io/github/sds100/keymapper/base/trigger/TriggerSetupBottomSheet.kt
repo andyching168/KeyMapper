@@ -62,6 +62,7 @@ import io.github.sds100.keymapper.base.R
 import io.github.sds100.keymapper.base.compose.KeyMapperTheme
 import io.github.sds100.keymapper.base.compose.LocalCustomColorsPalette
 import io.github.sds100.keymapper.base.system.accessibility.FingerprintGestureType
+import io.github.sds100.keymapper.base.utils.ProModeStatus
 import io.github.sds100.keymapper.base.utils.ui.compose.AccessibilityServiceRequirementRow
 import io.github.sds100.keymapper.base.utils.ui.compose.CheckBoxText
 import io.github.sds100.keymapper.base.utils.ui.compose.HeaderText
@@ -77,11 +78,10 @@ import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun HandleTriggerSetupBottomSheet(
-    delegate: TriggerSetupDelegate,
-) {
+fun HandleTriggerSetupBottomSheet(delegate: TriggerSetupDelegate) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-    val triggerSetupState: TriggerSetupState? by delegate.triggerSetupState.collectAsStateWithLifecycle()
+    val triggerSetupState: TriggerSetupState? by
+        delegate.triggerSetupState.collectAsStateWithLifecycle()
 
     when (triggerSetupState) {
         is TriggerSetupState.Volume -> VolumeTriggerSetupBottomSheet(
@@ -91,7 +91,7 @@ fun HandleTriggerSetupBottomSheet(
             onEnableAccessibilityServiceClick = delegate::onEnableAccessibilityServiceClick,
             onEnableProModeClick = delegate::onEnableProModeClick,
             onRecordTriggerClick = delegate::onTriggerSetupRecordClick,
-            onScreenOffCheckedChange = delegate::onScreenOffTriggerSetupCheckedChange,
+            onUseProModeCheckedChange = delegate::onUseProModeCheckedChange,
         )
 
         is TriggerSetupState.Power -> PowerTriggerSetupBottomSheet(
@@ -119,7 +119,7 @@ fun HandleTriggerSetupBottomSheet(
             onEnableAccessibilityServiceClick = delegate::onEnableAccessibilityServiceClick,
             onEnableProModeClick = delegate::onEnableProModeClick,
             onRecordTriggerClick = delegate::onTriggerSetupRecordClick,
-            onScreenOffCheckedChange = delegate::onScreenOffTriggerSetupCheckedChange,
+            onUseProModeCheckedChange = delegate::onUseProModeCheckedChange,
         )
 
         is TriggerSetupState.Mouse -> MouseTriggerSetupBottomSheet(
@@ -138,7 +138,7 @@ fun HandleTriggerSetupBottomSheet(
             onEnableAccessibilityServiceClick = delegate::onEnableAccessibilityServiceClick,
             onEnableProModeClick = delegate::onEnableProModeClick,
             onRecordTriggerClick = delegate::onTriggerSetupRecordClick,
-            onScreenOffCheckedChange = delegate::onScreenOffTriggerSetupCheckedChange,
+            onUseProModeCheckedChange = delegate::onUseProModeCheckedChange,
         )
 
         is TriggerSetupState.NotDetected -> NotDetectedSetupBottomSheet(
@@ -159,7 +159,7 @@ fun HandleTriggerSetupBottomSheet(
             onRecordTriggerClick = delegate::onTriggerSetupRecordClick,
             onEnableInputMethodClick = delegate::onEnableImeClick,
             onChooseInputMethodClick = delegate::onChooseImeClick,
-            onScreenOffCheckedChange = delegate::onScreenOffTriggerSetupCheckedChange,
+            onUseProModeCheckedChange = delegate::onUseProModeCheckedChange,
             onEnableProModeClick = delegate::onEnableProModeClick,
         )
 
@@ -194,7 +194,7 @@ private fun GamepadTriggerSetupBottomSheet(
     onEnableProModeClick: () -> Unit = {},
     onEnableInputMethodClick: () -> Unit = { },
     onChooseInputMethodClick: () -> Unit = { },
-    onScreenOffCheckedChange: (Boolean) -> Unit = {},
+    onUseProModeCheckedChange: (Boolean) -> Unit = {},
 ) {
     TriggerSetupBottomSheet(
         modifier = modifier,
@@ -224,13 +224,16 @@ private fun GamepadTriggerSetupBottomSheet(
         HeaderText(text = stringResource(R.string.trigger_setup_options_title))
 
         val buttonStates = listOf(
-            TriggerSetupState.Gamepad.Type.DPAD to stringResource(R.string.trigger_setup_gamepad_type_dpad),
-            TriggerSetupState.Gamepad.Type.SIMPLE_BUTTONS to stringResource(R.string.trigger_setup_gamepad_type_simple_buttons),
+            TriggerSetupState.Gamepad.Type.DPAD to
+                stringResource(R.string.trigger_setup_gamepad_type_dpad),
+            TriggerSetupState.Gamepad.Type.SIMPLE_BUTTONS to
+                stringResource(R.string.trigger_setup_gamepad_type_simple_buttons),
         )
 
         val selectedState = when (state) {
             is TriggerSetupState.Gamepad.Dpad -> TriggerSetupState.Gamepad.Type.DPAD
-            is TriggerSetupState.Gamepad.SimpleButtons -> TriggerSetupState.Gamepad.Type.SIMPLE_BUTTONS
+            is TriggerSetupState.Gamepad.SimpleButtons ->
+                TriggerSetupState.Gamepad.Type.SIMPLE_BUTTONS
         }
 
         KeyMapperSegmentedButtonRow(
@@ -240,12 +243,12 @@ private fun GamepadTriggerSetupBottomSheet(
             onStateSelected = onSelectButtonType,
         )
 
-        val isScreenOffChecked = when (state) {
+        val isUseProModeChecked = when (state) {
             is TriggerSetupState.Gamepad.Dpad -> false
-            is TriggerSetupState.Gamepad.SimpleButtons -> state.isScreenOffChecked
+            is TriggerSetupState.Gamepad.SimpleButtons -> state.isUseProModeChecked
         }
 
-        val isScreenOffEnabled = when (state) {
+        val isUseProModeEnabled = when (state) {
             is TriggerSetupState.Gamepad.Dpad -> false
             is TriggerSetupState.Gamepad.SimpleButtons -> true
         }
@@ -253,9 +256,9 @@ private fun GamepadTriggerSetupBottomSheet(
         CheckBoxText(
             modifier = Modifier.fillMaxWidth(),
             text = stringResource(R.string.trigger_setup_screen_off_option),
-            isChecked = isScreenOffChecked,
-            isEnabled = isScreenOffEnabled,
-            onCheckedChange = onScreenOffCheckedChange,
+            isChecked = isUseProModeChecked,
+            isEnabled = isUseProModeEnabled,
+            onCheckedChange = onUseProModeCheckedChange,
         )
 
         HeaderText(text = stringResource(R.string.trigger_setup_requirements_title))
@@ -279,7 +282,7 @@ private fun GamepadTriggerSetupBottomSheet(
             is TriggerSetupState.Gamepad.SimpleButtons -> {
                 ProModeRequirementRow(
                     modifier = Modifier.fillMaxWidth(),
-                    isVisible = state.isScreenOffChecked,
+                    isVisible = state.isUseProModeChecked,
                     proModeStatus = state.proModeStatus,
                     onClick = onEnableProModeClick,
                 )
@@ -446,7 +449,7 @@ private fun VolumeTriggerSetupBottomSheet(
     onEnableAccessibilityServiceClick: () -> Unit = {},
     onEnableProModeClick: () -> Unit = {},
     onRecordTriggerClick: () -> Unit = {},
-    onScreenOffCheckedChange: (Boolean) -> Unit = {},
+    onUseProModeCheckedChange: (Boolean) -> Unit = {},
 ) {
     TriggerSetupBottomSheet(
         modifier = modifier,
@@ -478,9 +481,9 @@ private fun VolumeTriggerSetupBottomSheet(
         CheckBoxText(
             modifier = Modifier.fillMaxWidth(),
             text = stringResource(R.string.trigger_setup_screen_off_option),
-            isChecked = state.isScreenOffChecked,
-            isEnabled = true,
-            onCheckedChange = onScreenOffCheckedChange,
+            isChecked = state.isUseProModeChecked,
+            isEnabled = !state.forceProMode,
+            onCheckedChange = onUseProModeCheckedChange,
         )
 
         HeaderText(text = stringResource(R.string.trigger_setup_requirements_title))
@@ -491,7 +494,7 @@ private fun VolumeTriggerSetupBottomSheet(
         )
 
         ProModeRequirementRow(
-            isVisible = state.isScreenOffChecked,
+            isVisible = state.isUseProModeChecked,
             proModeStatus = state.proModeStatus,
             onClick = onEnableProModeClick,
         )
@@ -592,7 +595,7 @@ private fun OtherTriggerSetupBottomSheet(
     onEnableAccessibilityServiceClick: () -> Unit = {},
     onEnableProModeClick: () -> Unit = {},
     onRecordTriggerClick: () -> Unit = {},
-    onScreenOffCheckedChange: (Boolean) -> Unit = {},
+    onUseProModeCheckedChange: (Boolean) -> Unit = {},
 ) {
     TriggerSetupBottomSheet(
         modifier = modifier,
@@ -624,9 +627,9 @@ private fun OtherTriggerSetupBottomSheet(
         CheckBoxText(
             modifier = Modifier.fillMaxWidth(),
             text = stringResource(R.string.trigger_setup_screen_off_option),
-            isChecked = state.isScreenOffChecked,
-            isEnabled = true,
-            onCheckedChange = onScreenOffCheckedChange,
+            isChecked = state.isUseProModeChecked,
+            isEnabled = !state.forceProMode,
+            onCheckedChange = onUseProModeCheckedChange,
         )
 
         HeaderText(text = stringResource(R.string.trigger_setup_requirements_title))
@@ -637,7 +640,7 @@ private fun OtherTriggerSetupBottomSheet(
         )
 
         ProModeRequirementRow(
-            isVisible = state.isScreenOffChecked,
+            isVisible = state.isUseProModeChecked,
             proModeStatus = state.proModeStatus,
             onClick = onEnableProModeClick,
         )
@@ -676,7 +679,7 @@ private fun KeyboardTriggerSetupBottomSheet(
     onEnableAccessibilityServiceClick: () -> Unit = {},
     onEnableProModeClick: () -> Unit = {},
     onRecordTriggerClick: () -> Unit = {},
-    onScreenOffCheckedChange: (Boolean) -> Unit = {},
+    onUseProModeCheckedChange: (Boolean) -> Unit = {},
 ) {
     TriggerSetupBottomSheet(
         modifier = modifier,
@@ -708,9 +711,9 @@ private fun KeyboardTriggerSetupBottomSheet(
         CheckBoxText(
             modifier = Modifier.fillMaxWidth(),
             text = stringResource(R.string.trigger_setup_screen_off_option),
-            isChecked = state.isScreenOffChecked,
-            isEnabled = true,
-            onCheckedChange = onScreenOffCheckedChange,
+            isChecked = state.isUseProModeChecked,
+            isEnabled = !state.forceProMode,
+            onCheckedChange = onUseProModeCheckedChange,
         )
 
         HeaderText(text = stringResource(R.string.trigger_setup_requirements_title))
@@ -721,7 +724,7 @@ private fun KeyboardTriggerSetupBottomSheet(
         )
 
         ProModeRequirementRow(
-            isVisible = state.isScreenOffChecked,
+            isVisible = state.isUseProModeChecked,
             proModeStatus = state.proModeStatus,
             onClick = onEnableProModeClick,
         )
@@ -799,11 +802,7 @@ private fun FingerprintGestureSetupBottomSheet(
 }
 
 @Composable
-fun RemapStatusRow(
-    modifier: Modifier = Modifier,
-    color: Color,
-    text: String,
-) {
+fun RemapStatusRow(modifier: Modifier = Modifier, color: Color, text: String) {
     Row(
         modifier = modifier,
         verticalAlignment = Alignment.CenterVertically,
@@ -984,10 +983,11 @@ private fun VolumeButtonPreview() {
             sheetState = sheetState,
             state = TriggerSetupState.Volume(
                 isAccessibilityServiceEnabled = true,
-                isScreenOffChecked = true,
+                isUseProModeChecked = true,
                 proModeStatus = ProModeStatus.ENABLED,
                 areRequirementsMet = true,
                 recordTriggerState = RecordTriggerState.Idle,
+                forceProMode = false,
             ),
         )
     }
@@ -1008,10 +1008,11 @@ private fun VolumeButtonDisabledPreview() {
             sheetState = sheetState,
             state = TriggerSetupState.Volume(
                 isAccessibilityServiceEnabled = false,
-                isScreenOffChecked = true,
+                isUseProModeChecked = true,
                 proModeStatus = ProModeStatus.DISABLED,
                 areRequirementsMet = false,
                 recordTriggerState = RecordTriggerState.Idle,
+                forceProMode = false,
             ),
         )
     }
@@ -1076,10 +1077,11 @@ private fun KeyboardButtonEnabledPreview() {
             sheetState = sheetState,
             state = TriggerSetupState.Keyboard(
                 isAccessibilityServiceEnabled = true,
-                isScreenOffChecked = false,
+                isUseProModeChecked = false,
                 proModeStatus = ProModeStatus.DISABLED,
                 areRequirementsMet = true,
                 recordTriggerState = RecordTriggerState.Idle,
+                forceProMode = false,
             ),
         )
     }
@@ -1100,10 +1102,11 @@ private fun KeyboardButtonDisabledPreview() {
             sheetState = sheetState,
             state = TriggerSetupState.Keyboard(
                 isAccessibilityServiceEnabled = false,
-                isScreenOffChecked = true,
+                isUseProModeChecked = true,
                 proModeStatus = ProModeStatus.DISABLED,
                 areRequirementsMet = false,
                 recordTriggerState = RecordTriggerState.Idle,
+                forceProMode = false,
             ),
         )
     }
@@ -1172,10 +1175,11 @@ private fun OtherButtonPreview() {
             sheetState = sheetState,
             state = TriggerSetupState.Other(
                 isAccessibilityServiceEnabled = true,
-                isScreenOffChecked = true,
+                isUseProModeChecked = true,
                 proModeStatus = ProModeStatus.ENABLED,
                 areRequirementsMet = true,
                 recordTriggerState = RecordTriggerState.Idle,
+                forceProMode = false,
             ),
         )
     }
@@ -1196,10 +1200,11 @@ private fun OtherButtonDisabledPreview() {
             sheetState = sheetState,
             state = TriggerSetupState.Other(
                 isAccessibilityServiceEnabled = false,
-                isScreenOffChecked = true,
+                isUseProModeChecked = true,
                 proModeStatus = ProModeStatus.DISABLED,
                 areRequirementsMet = false,
                 recordTriggerState = RecordTriggerState.Idle,
+                forceProMode = false,
             ),
         )
     }
@@ -1411,10 +1416,11 @@ private fun GamepadSimpleButtonsPreview() {
             sheetState = sheetState,
             state = TriggerSetupState.Gamepad.SimpleButtons(
                 isAccessibilityServiceEnabled = true,
-                isScreenOffChecked = true,
+                isUseProModeChecked = true,
                 proModeStatus = ProModeStatus.ENABLED,
                 areRequirementsMet = true,
                 recordTriggerState = RecordTriggerState.Idle,
+                forceProMode = false,
             ),
         )
     }
@@ -1435,10 +1441,11 @@ private fun GamepadSimpleButtonsDisabledPreview() {
             sheetState = sheetState,
             state = TriggerSetupState.Gamepad.SimpleButtons(
                 isAccessibilityServiceEnabled = false,
-                isScreenOffChecked = false,
+                isUseProModeChecked = false,
                 proModeStatus = ProModeStatus.DISABLED,
                 areRequirementsMet = false,
                 recordTriggerState = RecordTriggerState.Idle,
+                forceProMode = false,
             ),
         )
     }

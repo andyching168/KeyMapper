@@ -275,23 +275,22 @@ class KeyMapAlgorithmTest {
         }
 
     @Test
-    fun `Detect evdev trigger with scan code if user setting enabled`() =
-        runTest(testDispatcher) {
-            val trigger = singleKeyTrigger(
-                EvdevTriggerKey(
-                    keyCode = KeyEvent.KEYCODE_A,
-                    scanCode = Scancode.KEY_B,
-                    device = FAKE_CONTROLLER_EVDEV_DEVICE,
-                    detectWithScanCodeUserSetting = true,
-                ),
-            )
-            loadKeyMaps(KeyMap(trigger = trigger, actionList = listOf(TEST_ACTION)))
+    fun `Detect evdev trigger with scan code if user setting enabled`() = runTest(testDispatcher) {
+        val trigger = singleKeyTrigger(
+            EvdevTriggerKey(
+                keyCode = KeyEvent.KEYCODE_A,
+                scanCode = Scancode.KEY_B,
+                device = FAKE_CONTROLLER_EVDEV_DEVICE,
+                detectWithScanCodeUserSetting = true,
+            ),
+        )
+        loadKeyMaps(KeyMap(trigger = trigger, actionList = listOf(TEST_ACTION)))
 
-            inputDownEvdevEvent(KeyEvent.KEYCODE_B, Scancode.KEY_B, FAKE_CONTROLLER_EVDEV_DEVICE)
-            inputUpEvdevEvent(KeyEvent.KEYCODE_B, Scancode.KEY_B, FAKE_CONTROLLER_EVDEV_DEVICE)
+        inputDownEvdevEvent(KeyEvent.KEYCODE_B, Scancode.KEY_B, FAKE_CONTROLLER_EVDEV_DEVICE)
+        inputUpEvdevEvent(KeyEvent.KEYCODE_B, Scancode.KEY_B, FAKE_CONTROLLER_EVDEV_DEVICE)
 
-            verify(performActionsUseCase, times(1)).perform(TEST_ACTION.data)
-        }
+        verify(performActionsUseCase, times(1)).perform(TEST_ACTION.data)
+    }
 
     @Test
     fun `Detect evdev trigger with scan code when scan code matches but key code differs`() =
@@ -314,24 +313,23 @@ class KeyMapAlgorithmTest {
         }
 
     @Test
-    fun `Do not detect evdev trigger when scan code differs`() =
-        runTest(testDispatcher) {
-            val trigger = singleKeyTrigger(
-                EvdevTriggerKey(
-                    keyCode = KeyEvent.KEYCODE_A,
-                    scanCode = Scancode.KEY_B,
-                    device = FAKE_CONTROLLER_EVDEV_DEVICE,
-                    detectWithScanCodeUserSetting = true,
-                ),
-            )
-            loadKeyMaps(KeyMap(trigger = trigger, actionList = listOf(TEST_ACTION)))
+    fun `Do not detect evdev trigger when scan code differs`() = runTest(testDispatcher) {
+        val trigger = singleKeyTrigger(
+            EvdevTriggerKey(
+                keyCode = KeyEvent.KEYCODE_A,
+                scanCode = Scancode.KEY_B,
+                device = FAKE_CONTROLLER_EVDEV_DEVICE,
+                detectWithScanCodeUserSetting = true,
+            ),
+        )
+        loadKeyMaps(KeyMap(trigger = trigger, actionList = listOf(TEST_ACTION)))
 
-            // Input with matching key code but different scan code
-            inputDownEvdevEvent(KeyEvent.KEYCODE_A, Scancode.KEY_C, FAKE_CONTROLLER_EVDEV_DEVICE)
-            inputUpEvdevEvent(KeyEvent.KEYCODE_A, Scancode.KEY_C, FAKE_CONTROLLER_EVDEV_DEVICE)
+        // Input with matching key code but different scan code
+        inputDownEvdevEvent(KeyEvent.KEYCODE_A, Scancode.KEY_C, FAKE_CONTROLLER_EVDEV_DEVICE)
+        inputUpEvdevEvent(KeyEvent.KEYCODE_A, Scancode.KEY_C, FAKE_CONTROLLER_EVDEV_DEVICE)
 
-            verify(performActionsUseCase, never()).perform(TEST_ACTION.data)
-        }
+        verify(performActionsUseCase, never()).perform(TEST_ACTION.data)
+    }
 
     @Test
     fun `Sequence trigger with multiple evdev keys and scan code detection is triggered`() =
@@ -398,54 +396,52 @@ class KeyMapAlgorithmTest {
         }
 
     @Test
-    fun `Scan code detection works with long press evdev trigger`() =
-        runTest(testDispatcher) {
-            val trigger = singleKeyTrigger(
-                EvdevTriggerKey(
-                    keyCode = KeyEvent.KEYCODE_A,
-                    scanCode = Scancode.KEY_B,
-                    device = FAKE_CONTROLLER_EVDEV_DEVICE,
-                    clickType = ClickType.LONG_PRESS,
-                    detectWithScanCodeUserSetting = true,
-                ),
-            )
-            loadKeyMaps(KeyMap(trigger = trigger, actionList = listOf(TEST_ACTION)))
+    fun `Scan code detection works with long press evdev trigger`() = runTest(testDispatcher) {
+        val trigger = singleKeyTrigger(
+            EvdevTriggerKey(
+                keyCode = KeyEvent.KEYCODE_A,
+                scanCode = Scancode.KEY_B,
+                device = FAKE_CONTROLLER_EVDEV_DEVICE,
+                clickType = ClickType.LONG_PRESS,
+                detectWithScanCodeUserSetting = true,
+            ),
+        )
+        loadKeyMaps(KeyMap(trigger = trigger, actionList = listOf(TEST_ACTION)))
 
-            inputDownEvdevEvent(KeyEvent.KEYCODE_X, Scancode.KEY_B, FAKE_CONTROLLER_EVDEV_DEVICE)
-            // Wait for long press duration
-            delay(LONG_PRESS_DELAY + 100L)
-            inputUpEvdevEvent(KeyEvent.KEYCODE_X, Scancode.KEY_B, FAKE_CONTROLLER_EVDEV_DEVICE)
+        inputDownEvdevEvent(KeyEvent.KEYCODE_X, Scancode.KEY_B, FAKE_CONTROLLER_EVDEV_DEVICE)
+        // Wait for long press duration
+        delay(LONG_PRESS_DELAY + 100L)
+        inputUpEvdevEvent(KeyEvent.KEYCODE_X, Scancode.KEY_B, FAKE_CONTROLLER_EVDEV_DEVICE)
 
-            verify(performActionsUseCase, times(1)).perform(TEST_ACTION.data)
-        }
+        verify(performActionsUseCase, times(1)).perform(TEST_ACTION.data)
+    }
 
     @Test
-    fun `Scan code detection works with double press evdev trigger`() =
-        runTest(testDispatcher) {
-            val trigger = singleKeyTrigger(
-                EvdevTriggerKey(
-                    keyCode = KeyEvent.KEYCODE_A,
-                    scanCode = Scancode.KEY_B,
-                    device = FAKE_CONTROLLER_EVDEV_DEVICE,
-                    clickType = ClickType.DOUBLE_PRESS,
-                    detectWithScanCodeUserSetting = true,
-                ),
-            )
-            loadKeyMaps(KeyMap(trigger = trigger, actionList = listOf(TEST_ACTION)))
+    fun `Scan code detection works with double press evdev trigger`() = runTest(testDispatcher) {
+        val trigger = singleKeyTrigger(
+            EvdevTriggerKey(
+                keyCode = KeyEvent.KEYCODE_A,
+                scanCode = Scancode.KEY_B,
+                device = FAKE_CONTROLLER_EVDEV_DEVICE,
+                clickType = ClickType.DOUBLE_PRESS,
+                detectWithScanCodeUserSetting = true,
+            ),
+        )
+        loadKeyMaps(KeyMap(trigger = trigger, actionList = listOf(TEST_ACTION)))
 
-            // First press
-            inputDownEvdevEvent(KeyEvent.KEYCODE_X, Scancode.KEY_B, FAKE_CONTROLLER_EVDEV_DEVICE)
-            delay(50L)
-            inputUpEvdevEvent(KeyEvent.KEYCODE_X, Scancode.KEY_B, FAKE_CONTROLLER_EVDEV_DEVICE)
-            delay(50L)
+        // First press
+        inputDownEvdevEvent(KeyEvent.KEYCODE_X, Scancode.KEY_B, FAKE_CONTROLLER_EVDEV_DEVICE)
+        delay(50L)
+        inputUpEvdevEvent(KeyEvent.KEYCODE_X, Scancode.KEY_B, FAKE_CONTROLLER_EVDEV_DEVICE)
+        delay(50L)
 
-            // Second press
-            inputDownEvdevEvent(KeyEvent.KEYCODE_X, Scancode.KEY_B, FAKE_CONTROLLER_EVDEV_DEVICE)
-            delay(50L)
-            inputUpEvdevEvent(KeyEvent.KEYCODE_X, Scancode.KEY_B, FAKE_CONTROLLER_EVDEV_DEVICE)
+        // Second press
+        inputDownEvdevEvent(KeyEvent.KEYCODE_X, Scancode.KEY_B, FAKE_CONTROLLER_EVDEV_DEVICE)
+        delay(50L)
+        inputUpEvdevEvent(KeyEvent.KEYCODE_X, Scancode.KEY_B, FAKE_CONTROLLER_EVDEV_DEVICE)
 
-            verify(performActionsUseCase, times(1)).perform(TEST_ACTION.data)
-        }
+        verify(performActionsUseCase, times(1)).perform(TEST_ACTION.data)
+    }
 
     @Test
     fun `Scan code detection fails when device differs for evdev trigger`() =
@@ -528,58 +524,56 @@ class KeyMapAlgorithmTest {
         }
 
     @Test
-    fun `Sequence trigger with multiple evdev keys is triggered`() =
-        runTest(testDispatcher) {
-            val trigger = sequenceTrigger(
-                EvdevTriggerKey(
-                    keyCode = KeyEvent.KEYCODE_A,
-                    scanCode = Scancode.KEY_A,
-                    device = FAKE_CONTROLLER_EVDEV_DEVICE,
-                ),
-                EvdevTriggerKey(
-                    keyCode = KeyEvent.KEYCODE_B,
-                    scanCode = Scancode.KEY_B,
-                    device = FAKE_CONTROLLER_EVDEV_DEVICE,
-                ),
-            )
+    fun `Sequence trigger with multiple evdev keys is triggered`() = runTest(testDispatcher) {
+        val trigger = sequenceTrigger(
+            EvdevTriggerKey(
+                keyCode = KeyEvent.KEYCODE_A,
+                scanCode = Scancode.KEY_A,
+                device = FAKE_CONTROLLER_EVDEV_DEVICE,
+            ),
+            EvdevTriggerKey(
+                keyCode = KeyEvent.KEYCODE_B,
+                scanCode = Scancode.KEY_B,
+                device = FAKE_CONTROLLER_EVDEV_DEVICE,
+            ),
+        )
 
-            loadKeyMaps(KeyMap(trigger = trigger, actionList = listOf(TEST_ACTION)))
+        loadKeyMaps(KeyMap(trigger = trigger, actionList = listOf(TEST_ACTION)))
 
-            inputDownEvdevEvent(KeyEvent.KEYCODE_A, Scancode.KEY_A, FAKE_CONTROLLER_EVDEV_DEVICE)
-            inputUpEvdevEvent(KeyEvent.KEYCODE_A, Scancode.KEY_A, FAKE_CONTROLLER_EVDEV_DEVICE)
+        inputDownEvdevEvent(KeyEvent.KEYCODE_A, Scancode.KEY_A, FAKE_CONTROLLER_EVDEV_DEVICE)
+        inputUpEvdevEvent(KeyEvent.KEYCODE_A, Scancode.KEY_A, FAKE_CONTROLLER_EVDEV_DEVICE)
 
-            inputDownEvdevEvent(KeyEvent.KEYCODE_B, Scancode.KEY_B, FAKE_CONTROLLER_EVDEV_DEVICE)
-            inputUpEvdevEvent(KeyEvent.KEYCODE_B, Scancode.KEY_B, FAKE_CONTROLLER_EVDEV_DEVICE)
+        inputDownEvdevEvent(KeyEvent.KEYCODE_B, Scancode.KEY_B, FAKE_CONTROLLER_EVDEV_DEVICE)
+        inputUpEvdevEvent(KeyEvent.KEYCODE_B, Scancode.KEY_B, FAKE_CONTROLLER_EVDEV_DEVICE)
 
-            verify(performActionsUseCase, times(1)).perform(TEST_ACTION.data)
-        }
+        verify(performActionsUseCase, times(1)).perform(TEST_ACTION.data)
+    }
 
     @Test
-    fun `Parallel trigger with multiple evdev keys is triggered`() =
-        runTest(testDispatcher) {
-            val trigger = parallelTrigger(
-                EvdevTriggerKey(
-                    keyCode = KeyEvent.KEYCODE_A,
-                    scanCode = Scancode.KEY_A,
-                    device = FAKE_CONTROLLER_EVDEV_DEVICE,
-                ),
-                EvdevTriggerKey(
-                    keyCode = KeyEvent.KEYCODE_B,
-                    scanCode = Scancode.KEY_B,
-                    device = FAKE_CONTROLLER_EVDEV_DEVICE,
-                ),
-            )
+    fun `Parallel trigger with multiple evdev keys is triggered`() = runTest(testDispatcher) {
+        val trigger = parallelTrigger(
+            EvdevTriggerKey(
+                keyCode = KeyEvent.KEYCODE_A,
+                scanCode = Scancode.KEY_A,
+                device = FAKE_CONTROLLER_EVDEV_DEVICE,
+            ),
+            EvdevTriggerKey(
+                keyCode = KeyEvent.KEYCODE_B,
+                scanCode = Scancode.KEY_B,
+                device = FAKE_CONTROLLER_EVDEV_DEVICE,
+            ),
+        )
 
-            loadKeyMaps(KeyMap(trigger = trigger, actionList = listOf(TEST_ACTION)))
+        loadKeyMaps(KeyMap(trigger = trigger, actionList = listOf(TEST_ACTION)))
 
-            inputDownEvdevEvent(KeyEvent.KEYCODE_A, Scancode.KEY_A, FAKE_CONTROLLER_EVDEV_DEVICE)
-            inputDownEvdevEvent(KeyEvent.KEYCODE_B, Scancode.KEY_B, FAKE_CONTROLLER_EVDEV_DEVICE)
+        inputDownEvdevEvent(KeyEvent.KEYCODE_A, Scancode.KEY_A, FAKE_CONTROLLER_EVDEV_DEVICE)
+        inputDownEvdevEvent(KeyEvent.KEYCODE_B, Scancode.KEY_B, FAKE_CONTROLLER_EVDEV_DEVICE)
 
-            inputUpEvdevEvent(KeyEvent.KEYCODE_A, Scancode.KEY_A, FAKE_CONTROLLER_EVDEV_DEVICE)
-            inputUpEvdevEvent(KeyEvent.KEYCODE_B, Scancode.KEY_B, FAKE_CONTROLLER_EVDEV_DEVICE)
+        inputUpEvdevEvent(KeyEvent.KEYCODE_A, Scancode.KEY_A, FAKE_CONTROLLER_EVDEV_DEVICE)
+        inputUpEvdevEvent(KeyEvent.KEYCODE_B, Scancode.KEY_B, FAKE_CONTROLLER_EVDEV_DEVICE)
 
-            verify(performActionsUseCase, times(1)).perform(TEST_ACTION.data)
-        }
+        verify(performActionsUseCase, times(1)).perform(TEST_ACTION.data)
+    }
 
     @Test
     fun `Evdev trigger is not triggered from events from other devices`() =
@@ -710,7 +704,9 @@ class KeyMapAlgorithmTest {
                         ),
                         ConstraintState(
                             constraints = setOf(
-                                Constraint(data = ConstraintData.AppInForeground(packageName = "app")),
+                                Constraint(
+                                    data = ConstraintData.AppInForeground(packageName = "app"),
+                                ),
                                 Constraint(data = ConstraintData.DeviceIsUnlocked),
                             ),
                             mode = ConstraintMode.OR,
@@ -2265,13 +2261,19 @@ class KeyMapAlgorithmTest {
             inputKeyEvent(
                 keyCode = KeyEvent.KEYCODE_SHIFT_LEFT,
                 action = KeyEvent.ACTION_DOWN,
-                metaState = KeyEvent.META_CTRL_LEFT_ON or KeyEvent.META_CTRL_ON or KeyEvent.META_SHIFT_LEFT_ON or KeyEvent.META_SHIFT_ON,
+                metaState =
+                KeyEvent.META_CTRL_LEFT_ON or KeyEvent.META_CTRL_ON or
+                    KeyEvent.META_SHIFT_LEFT_ON or
+                    KeyEvent.META_SHIFT_ON,
             )
 
             inputKeyEvent(
                 keyCode = KeyEvent.KEYCODE_1,
                 action = KeyEvent.ACTION_DOWN,
-                metaState = KeyEvent.META_CTRL_LEFT_ON or KeyEvent.META_CTRL_ON or KeyEvent.META_SHIFT_LEFT_ON or KeyEvent.META_SHIFT_ON,
+                metaState =
+                KeyEvent.META_CTRL_LEFT_ON or KeyEvent.META_CTRL_ON or
+                    KeyEvent.META_SHIFT_LEFT_ON or
+                    KeyEvent.META_SHIFT_ON,
             )
 
             inputKeyEvent(
@@ -2808,7 +2810,8 @@ class KeyMapAlgorithmTest {
                 // then
                 verify(performActionsUseCase, atLeast(2)).perform(action2.data)
 
-                delay(1000) // have a delay after a long press of the key is released so a double press isn't detected
+                // have a delay after a long press of the key is released so a double press isn't detected
+                delay(1000)
 
                 // when double press
                 mockTriggerKeyInput(trigger3.keys[0])
@@ -3147,7 +3150,9 @@ class KeyMapAlgorithmTest {
                 KeyMap(
                     0,
                     trigger = trigger,
-                    actionList = listOf(Action(data = ActionData.InputKeyEvent(KeyEvent.KEYCODE_ALT_LEFT))),
+                    actionList = listOf(
+                        Action(data = ActionData.InputKeyEvent(KeyEvent.KEYCODE_ALT_LEFT)),
+                    ),
                 ),
             )
 
@@ -3161,18 +3166,24 @@ class KeyMapAlgorithmTest {
             inputKeyEvent(
                 KeyEvent.KEYCODE_SHIFT_LEFT,
                 KeyEvent.ACTION_DOWN,
-                metaState = KeyEvent.META_CTRL_LEFT_ON + KeyEvent.META_CTRL_ON + KeyEvent.META_SHIFT_LEFT_ON + KeyEvent.META_SHIFT_ON,
+                metaState =
+                KeyEvent.META_CTRL_LEFT_ON + KeyEvent.META_CTRL_ON + KeyEvent.META_SHIFT_LEFT_ON +
+                    KeyEvent.META_SHIFT_ON,
             )
             inputKeyEvent(
                 KeyEvent.KEYCODE_C,
                 KeyEvent.ACTION_DOWN,
-                metaState = KeyEvent.META_CTRL_LEFT_ON + KeyEvent.META_CTRL_ON + KeyEvent.META_SHIFT_LEFT_ON + KeyEvent.META_SHIFT_ON,
+                metaState =
+                KeyEvent.META_CTRL_LEFT_ON + KeyEvent.META_CTRL_ON + KeyEvent.META_SHIFT_LEFT_ON +
+                    KeyEvent.META_SHIFT_ON,
             )
 
             inputKeyEvent(
                 KeyEvent.KEYCODE_CTRL_LEFT,
                 KeyEvent.ACTION_UP,
-                metaState = KeyEvent.META_CTRL_LEFT_ON + KeyEvent.META_CTRL_ON + KeyEvent.META_SHIFT_LEFT_ON + KeyEvent.META_SHIFT_ON,
+                metaState =
+                KeyEvent.META_CTRL_LEFT_ON + KeyEvent.META_CTRL_ON + KeyEvent.META_SHIFT_LEFT_ON +
+                    KeyEvent.META_SHIFT_ON,
             )
             inputKeyEvent(
                 KeyEvent.KEYCODE_SHIFT_LEFT,
@@ -3185,7 +3196,11 @@ class KeyMapAlgorithmTest {
             inOrder(detectKeyMapsUseCase) {
                 verify(detectKeyMapsUseCase, times(1)).imitateKeyEvent(
                     any(),
-                    metaState = eq(KeyEvent.META_ALT_LEFT_ON + KeyEvent.META_ALT_ON + KeyEvent.META_SHIFT_LEFT_ON + KeyEvent.META_SHIFT_ON),
+                    metaState = eq(
+                        KeyEvent.META_ALT_LEFT_ON + KeyEvent.META_ALT_ON +
+                            KeyEvent.META_SHIFT_LEFT_ON +
+                            KeyEvent.META_SHIFT_ON,
+                    ),
                     any(),
                     any(),
                     any(),
@@ -3421,33 +3436,31 @@ class KeyMapAlgorithmTest {
 
     @Test
     @Parameters(method = "params_dualParallelTrigger_input2ndKey_doNotConsumeUp")
-    fun dualParallelTrigger_input2ndKey_doNotConsumeUp(
-        description: String,
-        trigger: Trigger,
-    ) = runTest(testDispatcher) {
-        // given
-        loadKeyMaps(KeyMap(0, trigger = trigger, actionList = listOf(TEST_ACTION)))
+    fun dualParallelTrigger_input2ndKey_doNotConsumeUp(description: String, trigger: Trigger) =
+        runTest(testDispatcher) {
+            // given
+            loadKeyMaps(KeyMap(0, trigger = trigger, actionList = listOf(TEST_ACTION)))
 
-        // when
-        (trigger.keys[1] as KeyEventTriggerKey).let {
-            inputKeyEvent(
-                it.keyCode,
-                KeyEvent.ACTION_DOWN,
-                triggerKeyDeviceToInputDevice(it.device),
-            )
+            // when
+            (trigger.keys[1] as KeyEventTriggerKey).let {
+                inputKeyEvent(
+                    it.keyCode,
+                    KeyEvent.ACTION_DOWN,
+                    triggerKeyDeviceToInputDevice(it.device),
+                )
+            }
+
+            (trigger.keys[1] as KeyEventTriggerKey).let {
+                val consumed = inputKeyEvent(
+                    it.keyCode,
+                    KeyEvent.ACTION_UP,
+                    triggerKeyDeviceToInputDevice(it.device),
+                )
+
+                // then
+                assertThat(consumed, `is`(false))
+            }
         }
-
-        (trigger.keys[1] as KeyEventTriggerKey).let {
-            val consumed = inputKeyEvent(
-                it.keyCode,
-                KeyEvent.ACTION_UP,
-                triggerKeyDeviceToInputDevice(it.device),
-            )
-
-            // then
-            assertThat(consumed, `is`(false))
-        }
-    }
 
     fun params_dualParallelTrigger_input2ndKey_doNotConsumeUp() = listOf(
         arrayOf(
@@ -3647,7 +3660,7 @@ class KeyMapAlgorithmTest {
         }
 
     @Test
-    fun singleKeyTriggerAndShortPressParallelTriggerWithSameInitialKey_validSingleKeyTriggerInput_onlyPerformActiondoNotImitateKey() =
+    fun `singleKeyTriggerAndShortPressParallelTriggerWithSameInitialKey validSingleKeyTriggerInput onlyPerformActiondoNotImitateKey`() =
         runTest(testDispatcher) {
             // given
             val singleKeyTrigger = singleKeyTrigger(triggerKey(KeyEvent.KEYCODE_VOLUME_DOWN))
@@ -4733,54 +4746,45 @@ class KeyMapAlgorithmTest {
         ),
     )
 
-    private fun inputDownEvdevEvent(
-        keyCode: Int,
-        scanCode: Int,
-        device: EvdevDeviceInfo,
-    ): Boolean = controller.onInputEvent(
-        KMEvdevEvent(
-            type = KMEvdevEvent.TYPE_KEY_EVENT,
-            device = EvdevDeviceHandle(
-                path = "/dev/input${device.name}",
-                name = device.name,
-                bus = device.bus,
-                vendor = device.vendor,
-                product = device.product,
+    private fun inputDownEvdevEvent(keyCode: Int, scanCode: Int, device: EvdevDeviceInfo): Boolean =
+        controller.onInputEvent(
+            KMEvdevEvent(
+                type = KMEvdevEvent.TYPE_KEY_EVENT,
+                device = EvdevDeviceHandle(
+                    path = "/dev/input${device.name}",
+                    name = device.name,
+                    bus = device.bus,
+                    vendor = device.vendor,
+                    product = device.product,
+                ),
+                code = scanCode,
+                androidCode = keyCode,
+                value = KMEvdevEvent.VALUE_DOWN,
+                timeSec = testScope.currentTime,
+                timeUsec = 0,
             ),
-            code = scanCode,
-            androidCode = keyCode,
-            value = KMEvdevEvent.VALUE_DOWN,
-            timeSec = testScope.currentTime,
-            timeUsec = 0,
-        ),
-    )
+        )
 
-    private fun inputUpEvdevEvent(
-        keyCode: Int,
-        scanCode: Int,
-        device: EvdevDeviceInfo,
-    ): Boolean = controller.onInputEvent(
-        KMEvdevEvent(
-            type = KMEvdevEvent.TYPE_KEY_EVENT,
-            device = EvdevDeviceHandle(
-                path = "/dev/input${device.name}",
-                name = device.name,
-                bus = device.bus,
-                vendor = device.vendor,
-                product = device.product,
+    private fun inputUpEvdevEvent(keyCode: Int, scanCode: Int, device: EvdevDeviceInfo): Boolean =
+        controller.onInputEvent(
+            KMEvdevEvent(
+                type = KMEvdevEvent.TYPE_KEY_EVENT,
+                device = EvdevDeviceHandle(
+                    path = "/dev/input${device.name}",
+                    name = device.name,
+                    bus = device.bus,
+                    vendor = device.vendor,
+                    product = device.product,
+                ),
+                code = scanCode,
+                androidCode = keyCode,
+                value = KMEvdevEvent.VALUE_UP,
+                timeSec = testScope.currentTime,
+                timeUsec = 0,
             ),
-            code = scanCode,
-            androidCode = keyCode,
-            value = KMEvdevEvent.VALUE_UP,
-            timeSec = testScope.currentTime,
-            timeUsec = 0,
-        ),
-    )
+        )
 
-    private suspend fun mockParallelTrigger(
-        trigger: Trigger,
-        delay: Long? = null,
-    ) {
+    private suspend fun mockParallelTrigger(trigger: Trigger, delay: Long? = null) {
         require(trigger.mode is TriggerMode.Parallel)
         require(trigger.keys.all { it is KeyEventTriggerKey })
 
@@ -4826,7 +4830,11 @@ class KeyMapAlgorithmTest {
             isExternal = false,
             id = deviceId,
             isGameController = isGameController,
-            sources = if (isGameController) InputDevice.SOURCE_GAMEPAD else InputDevice.SOURCE_KEYBOARD,
+            sources = if (isGameController) {
+                InputDevice.SOURCE_GAMEPAD
+            } else {
+                InputDevice.SOURCE_KEYBOARD
+            },
         )
 
         is KeyEventTriggerDevice.External -> InputDeviceInfo(
@@ -4835,7 +4843,11 @@ class KeyMapAlgorithmTest {
             isExternal = true,
             id = deviceId,
             isGameController = isGameController,
-            sources = if (isGameController) InputDevice.SOURCE_GAMEPAD else InputDevice.SOURCE_KEYBOARD,
+            sources = if (isGameController) {
+                InputDevice.SOURCE_GAMEPAD
+            } else {
+                InputDevice.SOURCE_KEYBOARD
+            },
         )
 
         KeyEventTriggerDevice.Internal -> InputDeviceInfo(
@@ -4844,7 +4856,11 @@ class KeyMapAlgorithmTest {
             isExternal = false,
             id = deviceId,
             isGameController = isGameController,
-            sources = if (isGameController) InputDevice.SOURCE_GAMEPAD else InputDevice.SOURCE_KEYBOARD,
+            sources = if (isGameController) {
+                InputDevice.SOURCE_GAMEPAD
+            } else {
+                InputDevice.SOURCE_KEYBOARD
+            },
         )
     }
 }

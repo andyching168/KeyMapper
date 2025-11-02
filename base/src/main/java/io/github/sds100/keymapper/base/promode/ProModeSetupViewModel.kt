@@ -8,19 +8,21 @@ import io.github.sds100.keymapper.base.utils.ui.ResourceProvider
 import io.github.sds100.keymapper.common.utils.State
 import io.github.sds100.keymapper.common.utils.dataOrNull
 import io.github.sds100.keymapper.sysbridge.service.SystemBridgeSetupStep
+import javax.inject.Inject
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
-import javax.inject.Inject
 
 @HiltViewModel
 class ProModeSetupViewModel @Inject constructor(
     private val useCase: SystemBridgeSetupUseCase,
     navigationProvider: NavigationProvider,
     resourceProvider: ResourceProvider,
-) : ViewModel(), NavigationProvider by navigationProvider, ResourceProvider by resourceProvider {
+) : ViewModel(),
+    NavigationProvider by navigationProvider,
+    ResourceProvider by resourceProvider {
     val setupState: StateFlow<State<ProModeSetupState>> =
         combine(useCase.nextSetupStep, useCase.isSetupAssistantEnabled, ::buildState).stateIn(
             viewModelScope,
@@ -40,7 +42,9 @@ class ProModeSetupViewModel @Inject constructor(
             SystemBridgeSetupStep.WIFI_NETWORK -> useCase.connectWifiNetwork()
             SystemBridgeSetupStep.WIRELESS_DEBUGGING -> useCase.enableWirelessDebugging()
             SystemBridgeSetupStep.ADB_PAIRING -> useCase.pairWirelessAdb()
-            SystemBridgeSetupStep.START_SERVICE -> viewModelScope.launch { useCase.startSystemBridgeWithAdb() }
+            SystemBridgeSetupStep.START_SERVICE -> viewModelScope.launch {
+                useCase.startSystemBridgeWithAdb()
+            }
             SystemBridgeSetupStep.STARTED -> viewModelScope.launch { popBackStack() }
         }
     }
@@ -73,7 +77,9 @@ class ProModeSetupViewModel @Inject constructor(
                 stepCount = SystemBridgeSetupStep.entries.size,
                 step = step,
                 isSetupAssistantChecked = isSetupAssistantChecked,
-                isSetupAssistantButtonEnabled = step != SystemBridgeSetupStep.ACCESSIBILITY_SERVICE && step != SystemBridgeSetupStep.STARTED,
+                isSetupAssistantButtonEnabled =
+                step != SystemBridgeSetupStep.ACCESSIBILITY_SERVICE &&
+                    step != SystemBridgeSetupStep.STARTED,
             ),
         )
     }

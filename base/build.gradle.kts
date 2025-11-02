@@ -94,7 +94,6 @@ dependencies {
     implementation(libs.squareup.okhttp)
     implementation(libs.hivemq.mqtt.client)
     coreLibraryDesugaring(libs.desugar.jdk.libs)
-    implementation(libs.canopas.introshowcaseview)
     implementation(libs.dagger.hilt.android)
     ksp(libs.dagger.hilt.android.compiler)
     implementation(libs.bundles.splitties)

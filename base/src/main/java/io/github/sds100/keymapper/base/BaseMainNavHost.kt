@@ -18,11 +18,15 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import io.github.sds100.keymapper.base.actions.ChooseActionScreen
 import io.github.sds100.keymapper.base.actions.ChooseActionViewModel
+import io.github.sds100.keymapper.base.actions.ConfigShellCommandViewModel
+import io.github.sds100.keymapper.base.actions.ShellCommandActionScreen
 import io.github.sds100.keymapper.base.actions.uielement.InteractUiElementScreen
 import io.github.sds100.keymapper.base.actions.uielement.InteractUiElementViewModel
 import io.github.sds100.keymapper.base.constraints.ChooseConstraintScreen
 import io.github.sds100.keymapper.base.constraints.ChooseConstraintViewModel
 import io.github.sds100.keymapper.base.logging.LogScreen
+import io.github.sds100.keymapper.base.onboarding.HandleAccessibilityServiceDialogs
+import io.github.sds100.keymapper.base.onboarding.SetupAccessibilityServiceDelegateImpl
 import io.github.sds100.keymapper.base.promode.ProModeScreen
 import io.github.sds100.keymapper.base.promode.ProModeSetupScreen
 import io.github.sds100.keymapper.base.settings.AutomaticChangeImeSettingsScreen
@@ -38,16 +42,27 @@ import kotlinx.serialization.json.Json
 fun BaseMainNavHost(
     modifier: Modifier = Modifier,
     navController: NavHostController,
+    setupAccessibilityServiceDelegate: SetupAccessibilityServiceDelegateImpl,
     composableDestinations: NavGraphBuilder.() -> Unit = {},
 ) {
+    HandleAccessibilityServiceDialogs(setupAccessibilityServiceDelegate)
+
     NavHost(
         modifier = modifier,
         navController = navController,
         startDestination = NavDestination.Home,
-        enterTransition = { slideIntoContainer(towards = AnimatedContentTransitionScope.SlideDirection.Left) },
-        exitTransition = { slideOutOfContainer(towards = AnimatedContentTransitionScope.SlideDirection.Right) },
-        popEnterTransition = { slideIntoContainer(towards = AnimatedContentTransitionScope.SlideDirection.Right) },
-        popExitTransition = { slideOutOfContainer(towards = AnimatedContentTransitionScope.SlideDirection.Right) },
+        enterTransition = {
+            slideIntoContainer(towards = AnimatedContentTransitionScope.SlideDirection.Left)
+        },
+        exitTransition = {
+            slideOutOfContainer(towards = AnimatedContentTransitionScope.SlideDirection.Right)
+        },
+        popEnterTransition = {
+            slideIntoContainer(towards = AnimatedContentTransitionScope.SlideDirection.Right)
+        },
+        popExitTransition = {
+            slideOutOfContainer(towards = AnimatedContentTransitionScope.SlideDirection.Right)
+        },
     ) {
         composable<NavDestination.InteractUiElement> { backStackEntry ->
             val viewModel: InteractUiElementViewModel = hiltViewModel()
@@ -57,6 +72,19 @@ fun BaseMainNavHost(
             }
 
             InteractUiElementScreen(
+                modifier = Modifier.fillMaxSize(),
+                viewModel = viewModel,
+            )
+        }
+
+        composable<NavDestination.ConfigShellCommand> { backStackEntry ->
+            val viewModel: ConfigShellCommandViewModel = hiltViewModel()
+
+            backStackEntry.handleRouteArgs<NavDestination.ConfigShellCommand> { destination ->
+                destination.actionJson?.let { viewModel.loadAction(Json.decodeFromString(it)) }
+            }
+
+            ShellCommandActionScreen(
                 modifier = Modifier.fillMaxSize(),
                 viewModel = viewModel,
             )
@@ -122,7 +150,11 @@ fun BaseMainNavHost(
                     .fillMaxSize()
                     .windowInsetsPadding(
                         WindowInsets.systemBars.only(sides = WindowInsetsSides.Horizontal)
-                            .add(WindowInsets.displayCutout.only(sides = WindowInsetsSides.Horizontal)),
+                            .add(
+                                WindowInsets.displayCutout.only(
+                                    sides = WindowInsetsSides.Horizontal,
+                                ),
+                            ),
                     ),
                 viewModel = hiltViewModel(),
             )
